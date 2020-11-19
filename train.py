@@ -133,39 +133,39 @@ cv2.waitKey(0)
 
 
 
-#make dataset
-positiveImagePart = cv2.resize(positiveImagePart, (boxSizes[2],boxSizes[2]), interpolation=cv2.INTER_AREA)
-negativeImagePart = cv2.resize(negativeImagePart, (boxSizes[2],boxSizes[2]), interpolation=cv2.INTER_AREA)
-positiveImagePart = np.expand_dims(positiveImagePart, axis=0)
-negativeImagePart = np.expand_dims(negativeImagePart, axis=0)
-dataset = ([tf.cast(positiveImagePart, tf.float32), tf.cast(negativeImagePart, tf.float32)], [1, 0])
+# #make dataset
+# positiveImagePart = cv2.resize(positiveImagePart, (boxSizes[2],boxSizes[2]), interpolation=cv2.INTER_AREA)
+# negativeImagePart = cv2.resize(negativeImagePart, (boxSizes[2],boxSizes[2]), interpolation=cv2.INTER_AREA)
+# positiveImagePart = np.expand_dims(positiveImagePart, axis=0)
+# negativeImagePart = np.expand_dims(negativeImagePart, axis=0)
+# dataset = ([tf.cast(positiveImagePart, tf.float32), tf.cast(negativeImagePart, tf.float32)], [1, 0])
 
 
 
-### MODEL BUILDING BEGIN ###
-# FEATURE EXTRACTION LAYERS - TRANSFER LEARNING
-input = Input(shape=(boxSizes[2], boxSizes[2],3)) #input shape
+# ### MODEL BUILDING BEGIN ###
+# # FEATURE EXTRACTION LAYERS - TRANSFER LEARNING
+# input = Input(shape=(boxSizes[2], boxSizes[2],3)) #input shape
 
 
-base_model = Xception(
-    include_top=False, #no dense layers in the end to classify so i can make my own
-    weights=featureWeightsPath,
-    #input_tensor = input
-    input_shape = (boxSizes[2], boxSizes[2],3)
-)
-base_model.trainable=False
+# base_model = Xception(
+#     include_top=False, #no dense layers in the end to classify so i can make my own
+#     weights=featureWeightsPath,
+#     #input_tensor = input
+#     input_shape = (boxSizes[2], boxSizes[2],3)
+# )
+# base_model.trainable=False
 
-#OUR SEGMENT OF NETWORK - TRAINABLE
-x = base_model(input, training=False)
-x = GlobalAveragePooling2D()(x)
-output = Dense(1)(x)
-model = Model(input, output)
+# #OUR SEGMENT OF NETWORK - TRAINABLE
+# x = base_model(input, training=False)
+# x = GlobalAveragePooling2D()(x)
+# output = Dense(1)(x)
+# model = Model(input, output)
 
-#loss function
-loss_fn = keras.losses.BinaryCrossentropy(from_logits=True)
-#optimizer
-optimizer = keras.optimizers.Adam()
-### MODEL BUILDING END ###
+# #loss function
+# loss_fn = keras.losses.BinaryCrossentropy(from_logits=True)
+# #optimizer
+# optimizer = keras.optimizers.Adam()
+# ### MODEL BUILDING END ###
 
 
 # for inputs, targets in dataset:
