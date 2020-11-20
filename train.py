@@ -56,6 +56,7 @@ firstAnchorY = 5
 
 #get an image from training pool
 sampleName = random.choice(trainList)
+# sampleName = 'drones-inspire-phantom-mavic-on-260nw-1139013731.jpg' # GOOD EXAMPLE UNCOMMENT IF YOU WANT TO UNDERSTAND
 sampleImage = cv2.imread(trainPath + '/' + sampleName)
 sampleImageResized = cv2.resize(sampleImage, uniformImgSize, interpolation=cv2.INTER_AREA)
 (yS,xS,_) = sampleImage.shape           #S - Sample
@@ -90,17 +91,19 @@ for i in range(anchorsAlongX):
     for j in range(anchorsAlongY):
         for boxSize in boxSizes:
             for boxScale in boxScales:
+                currIoUs=[] #Important for multiple drones in one image
+                width = round(boxSize * boxScale)
+                height = round(boxSize / boxScale)
+                anchorX = firstAnchorX + i * anchorStepX
+                anchorY = firstAnchorY + j * anchorStepY
+                (xmin, xmax, ymin, ymax) = getBox(anchorX, anchorY, width, height, (yR,xR,3))
                 for realBoxR in realBoxesResized:
-                    width = round(boxSize * boxScale)
-                    height = round(boxSize / boxScale)
-                    anchorX = firstAnchorX + i * anchorStepX
-                    anchorY = firstAnchorY + j * anchorStepY
-                    (xmin, xmax, ymin, ymax) = getBox(anchorX, anchorY, width, height, (yR,xR,3))
                     currIou = Iou([xmin, xmax, ymin, ymax], realBoxR)
-                    if currIou >= positiveBoxThreshold:
-                        positiveBoxes.append([xmin, xmax, ymin, ymax])
-                    else:
-                        negativeBoxes.append([xmin, xmax, ymin, ymax])
+                    currIoUs.append(currIou)
+                if max(currIoUs) >= positiveBoxThreshold:
+                    positiveBoxes.append([xmin, xmax, ymin, ymax])
+                else:
+                    negativeBoxes.append([xmin, xmax, ymin, ymax])
 
 #since we have boxes let's pick one positive and one negative
 samplePositiveBox = random.choice(positiveBoxes)
