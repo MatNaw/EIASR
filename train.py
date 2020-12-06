@@ -110,74 +110,108 @@ samplePositiveBox = random.choice(positiveBoxes)
 sampleNegativeBox = random.choice(negativeBoxes)
 
 #take part of image for those boxes
-positiveImagePart = sampleImageResized[samplePositiveBox[2]:samplePositiveBox[3], samplePositiveBox[0]:samplePositiveBox[1]]
-negativeImagePart = sampleImageResized[sampleNegativeBox[2]:sampleNegativeBox[3], sampleNegativeBox[0]:sampleNegativeBox[1]]
+positiveImagePart = sampleImageResized[samplePositiveBox[2]:samplePositiveBox[3], samplePositiveBox[0]:samplePositiveBox[1],0:3]
+negativeImagePart = sampleImageResized[sampleNegativeBox[2]:sampleNegativeBox[3], sampleNegativeBox[0]:sampleNegativeBox[1],0:3]
 
 
 
-### NOT NEEDED PART FOR WORKING BEGIN ###
-# TO SEE!!! WHAT IS HAPPENING TILL NOW
-fig,ax = plt.subplots(3)
-ax[0].imshow(sampleImageResized)
-rect = patches.Rectangle((samplePositiveBox[0], samplePositiveBox[2]),samplePositiveBox[1]-samplePositiveBox[0],samplePositiveBox[3]-samplePositiveBox[2],linewidth=1,edgecolor='b',facecolor='none')
-ax[0].add_patch(rect)
-rect = patches.Rectangle((sampleNegativeBox[0], sampleNegativeBox[2]),sampleNegativeBox[1]-sampleNegativeBox[0],sampleNegativeBox[3]-sampleNegativeBox[2],linewidth=1,edgecolor='r',facecolor='none')
-ax[0].add_patch(rect)
-rect = patches.Rectangle((realBoxesResized[0][0], realBoxesResized[0][2]),realBoxesResized[0][1]-realBoxesResized[0][0],realBoxesResized[0][3]-realBoxesResized[0][2],linewidth=1,edgecolor='g',facecolor='none')
-ax[0].add_patch(rect)
-ax[1].imshow(positiveImagePart)
-ax[2].imshow(negativeImagePart)
-ax[0].set_title('Original')
-ax[1].set_title('Positive')
-ax[2].set_title('Negative')
-plt.show()
-cv2.waitKey(0)
-### NOT NEEDED PART FOR WORKING END ###
+# ### NOT NEEDED PART FOR WORKING BEGIN ###
+# # TO SEE!!! WHAT IS HAPPENING TILL NOW
+# fig,ax = plt.subplots(3)
+# ax[0].imshow(sampleImageResized)
+# rect = patches.Rectangle((samplePositiveBox[0], samplePositiveBox[2]),samplePositiveBox[1]-samplePositiveBox[0],samplePositiveBox[3]-samplePositiveBox[2],linewidth=1,edgecolor='b',facecolor='none')
+# ax[0].add_patch(rect)
+# rect = patches.Rectangle((sampleNegativeBox[0], sampleNegativeBox[2]),sampleNegativeBox[1]-sampleNegativeBox[0],sampleNegativeBox[3]-sampleNegativeBox[2],linewidth=1,edgecolor='r',facecolor='none')
+# ax[0].add_patch(rect)
+# rect = patches.Rectangle((realBoxesResized[0][0], realBoxesResized[0][2]),realBoxesResized[0][1]-realBoxesResized[0][0],realBoxesResized[0][3]-realBoxesResized[0][2],linewidth=1,edgecolor='g',facecolor='none')
+# ax[0].add_patch(rect)
+# ax[1].imshow(positiveImagePart)
+# ax[2].imshow(negativeImagePart)
+# ax[0].set_title('Original')
+# ax[1].set_title('Positive')
+# ax[2].set_title('Negative')
+# plt.show()
+# cv2.waitKey(0)
+# ### NOT NEEDED PART FOR WORKING END ###
 
 
+input_shape = int(uniformImgSize[0]/5)
+#make dataset
+positiveImagePart = cv2.resize(positiveImagePart, (input_shape,input_shape), interpolation=cv2.INTER_AREA)
+positiveImagePart = np.array(positiveImagePart)
+positiveImagePart.astype('float32')
+positiveImagePart = positiveImagePart/255
 
-# #make dataset
-# positiveImagePart = cv2.resize(positiveImagePart, (boxSizes[2],boxSizes[2]), interpolation=cv2.INTER_AREA)
-# negativeImagePart = cv2.resize(negativeImagePart, (boxSizes[2],boxSizes[2]), interpolation=cv2.INTER_AREA)
+negativeImagePart = cv2.resize(negativeImagePart, (input_shape,input_shape), interpolation=cv2.INTER_AREA)
+nevativeImagePart = np.array(negativeImagePart)
+negativeImagePart.astype('float32')
+negativeImagePart = negativeImagePart/255
 # positiveImagePart = np.expand_dims(positiveImagePart, axis=0)
 # negativeImagePart = np.expand_dims(negativeImagePart, axis=0)
-# dataset = ([tf.cast(positiveImagePart, tf.float32), tf.cast(negativeImagePart, tf.float32)], [1, 0])
+datasetImg = []
+datasetLabels = []
+datasetImg.append(positiveImagePart)
+datasetLabels.append([1])
+datasetImg.append(negativeImagePart)
+datasetLabels.append([0])
+
+###
+# model=tf.keras.Sequential(
+#         [
+#             tf.keras.layers.InputLayer(input_shape=(input_shape,input_shape, 3)),
+#             tf.keras.layers.Conv2D(filters=32, kernel_size=3, strides=(2, 2), activation='relu'),
+#             tf.keras.layers.Conv2D(filters=64, kernel_size=3, strides=(2, 2), activation='relu'),
+#             tf.keras.layers.Flatten(),
+#             tf.keras.layers.Dense(2)
+#         ])
+
+# model.compile(optimizer='rmsprop', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+# model.fit(x=np.array(datasetImg, np.float32), y=np.array(datasetLabels, np.float32), epochs=5)
+
+# print(model.predict(x=np.array(datasetImg, np.float32)))
+###
 
 
 
 # ### MODEL BUILDING BEGIN ###
 # # FEATURE EXTRACTION LAYERS - TRANSFER LEARNING
-# input = Input(shape=(boxSizes[2], boxSizes[2],3)) #input shape
+
+input = Input(shape=(boxSizes[2], boxSizes[2],3)) #input shape
 
 
-# base_model = Xception(
-#     include_top=False, #no dense layers in the end to classify so i can make my own
-#     weights=featureWeightsPath,
-#     #input_tensor = input
-#     input_shape = (boxSizes[2], boxSizes[2],3)
-# )
-# base_model.trainable=False
+base_model = Xception(
+    include_top=False, #no dense layers in the end to classify so i can make my own
+    weights=featureWeightsPath,
+    input_shape = (input_shape, input_shape,3)
+)
+base_model.trainable=False
 
-# #OUR SEGMENT OF NETWORK - TRAINABLE
-# x = base_model(input, training=False)
-# x = GlobalAveragePooling2D()(x)
-# output = Dense(1)(x)
-# model = Model(input, output)
+#OUR SEGMENT OF NETWORK - TRAINABLE
+x = base_model(input, training=False)
+x = GlobalAveragePooling2D()(x)
+output = Dense(1)(x)
+model = Model(input, output)
 
 # #loss function
-# loss_fn = keras.losses.BinaryCrossentropy(from_logits=True)
+loss_fn = keras.losses.BinaryCrossentropy(from_logits=True)
 # #optimizer
-# optimizer = keras.optimizers.Adam()
+optimizer = keras.optimizers.Adam()
 # ### MODEL BUILDING END ###
 
 
-# for inputs, targets in dataset:
-#     with tf.GradientTape() as tape:
-#         predictions = model(inputs)
-#         loss_value = loss_fn(targets, predictions)
-#     gradients = tape.gradient(loss_value, model.trainable_weights)
-#     optimizer.apply_gradients(zip(gradients, model.trainable_weights))
+with tf.GradientTape() as tape:
+    predictions = model(np.array(datasetImg, np.float32))
+    loss_value = loss_fn(np.array(datasetLabels, np.float32), predictions)
+gradients = tape.gradient(loss_value, model.trainable_weights)
+optimizer.apply_gradients(zip(gradients, model.trainable_weights))
 
+print(loss_value)
+print(model.predict(np.array(datasetImg, np.float32)))
+
+# model.compile(optimizer=optimizer, loss=loss_fn)
+# test_loss, test_accuracy = model.evaluate(np.array(datasetImg, np.float32),  np.array(datasetLabels, np.float32), verbose=2)
+# print(test_loss)
 # # Iterate over the batches of a dataset.
 # for inputs, targets in dataset:
 #     # Open a GradientTape.
