@@ -3,7 +3,7 @@ import random
 
 from csv import reader
 
-from usefulFunctions import Iou, getBox
+from usefulFunctions import Iou, getBox, markBoxes, createBatch
 
 import tensorflow as tf
 from tensorflow import keras
@@ -47,8 +47,8 @@ boxSizes = [int(uniformImgSize[0]/5*3), int(uniformImgSize[0]/5*2), int(uniformI
 boxScales= [1,1/(sqrt(2)), sqrt(2)] #Scales of boxes: 1:1, 1:2, 2:1
 
 #ANCHORS
-anchorStepX = 5 #pixels
-anchorStepY = 5 #pixels
+# anchorStepX = 5 #pixels
+# anchorStepY = 5 #pixels
 firstAnchorX = 5
 firstAnchorY = 5
 
@@ -69,9 +69,7 @@ yRatio = yS/yR
 # cv2.waitKey(0)
 # cv2.destroyAllWindows()
 
-#Build anchorBoxes for an image and create positive and negative ones
-positiveBoxes=[]
-negativeBoxes=[]
+#Build anchorBoxes for an image
 realBoxesResized = []
 
 #find real boxes and resize them
@@ -79,31 +77,10 @@ for label in labels:
     if label[0] == sampleName:
         realBoxesResized.append([round(int(label[2])/xRatio), round(int(label[3])/xRatio), round(int(label[4])/yRatio), round(int(label[5])/yRatio)])
 
-
-
-anchorsAlongX = round((xR - firstAnchorX)/anchorStepX) +1 #On scaled image
-anchorsAlongY = round((yR - firstAnchorY)/anchorStepY) +1 #On scaled image
-
 #IoU needed to accept that a box contains a drone - should not be too high
 positiveBoxThreshold = 0.4
 
-for i in range(anchorsAlongX):
-    for j in range(anchorsAlongY):
-        for boxSize in boxSizes:
-            for boxScale in boxScales:
-                currIoUs=[] #Important for multiple drones in one image
-                width = round(boxSize * boxScale)
-                height = round(boxSize / boxScale)
-                anchorX = firstAnchorX + i * anchorStepX
-                anchorY = firstAnchorY + j * anchorStepY
-                (xmin, xmax, ymin, ymax) = getBox(anchorX, anchorY, width, height, (yR,xR,3))
-                for realBoxR in realBoxesResized:
-                    currIou = Iou([xmin, xmax, ymin, ymax], realBoxR)
-                    currIoUs.append(currIou)
-                if max(currIoUs) >= positiveBoxThreshold:
-                    positiveBoxes.append([xmin, xmax, ymin, ymax])
-                else:
-                    negativeBoxes.append([xmin, xmax, ymin, ymax])
+positiveBoxes, negativeBoxes = markBoxes(xR, yR, boxSizes, boxScales, realBoxesResized, positiveBoxThreshold)
 
 #since we have boxes let's pick one positive and one negative
 samplePositiveBox = random.choice(positiveBoxes)
@@ -209,6 +186,19 @@ optimizer.apply_gradients(zip(gradients, model.trainable_weights))
 print(loss_value)
 print(model.predict(np.array(datasetImg, np.float32)))
 
+#MASS TRAINING
+BATCH_SIZE = 2
+NUM_EPOCHS = 100
+
+
+# for i in range(NUM_EPOCHS):
+#     #Get a batch of data
+#     PositiveSamples = []
+#     NegativeSamples = []
+#     while len(PositiveSamples) < BATCH_SIZE/2:
+#         sampleName = random.choice(trainList)
+
+
 # model.compile(optimizer=optimizer, loss=loss_fn)
 # test_loss, test_accuracy = model.evaluate(np.array(datasetImg, np.float32),  np.array(datasetLabels, np.float32), verbose=2)
 # print(test_loss)
@@ -225,4 +215,8 @@ print(model.predict(np.array(datasetImg, np.float32)))
 #     gradients = tape.gradient(loss_value, model.trainable_weights)
 #     # Update the weights of the model.
 #     optimizer.apply_gradients(zip(gradients, model.trainable_weights))
+
+#JESZCZE NIE DZIALA
+# batchImgs, batchLabels = createBatch(BATCH_SIZE, trainList, trainPath, labels, boxSizes, boxScales)
+# print(batchLabels)
 print('GOTOWE')
