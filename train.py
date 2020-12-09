@@ -72,11 +72,6 @@ def process_single_image(labels):
     positive_boxes, negative_boxes = mark_boxes(x_resized_shape, y_resized_shape, BOX_SIZES, BOX_SCALES,
                                                 real_boxes_resized, positive_box_threshold)
 
-    print("\nACK3 len positive\n")
-    print(len(positive_boxes))
-    print("\n")
-    print(len(negative_boxes))
-    print("ACK4")
 
     # since we have boxes let's pick one positive and one negative
     sample_positive_box = random.choice(positive_boxes)
@@ -92,39 +87,39 @@ def process_single_image(labels):
                           sample_negative_box[0]:sample_negative_box[1],
                           0:3]
 
-    # ## "NOT NEEDED PART FOR WORKING" BEGIN ###
-    # #TO SEE!!! WHAT IS HAPPENING TILL NOW
-    # fig, ax = plt.subplots(3)
-    # ax[0].imshow(sample_image_resized)
-    # rect = patches.Rectangle(
-    #     (sample_positive_box[0], sample_positive_box[2]),
-    #     sample_positive_box[1] - sample_positive_box[0],
-    #     sample_positive_box[3] - sample_positive_box[2],
-    #     linewidth=1,
-    #     edgecolor='b',
-    #     facecolor='none')
-    # ax[0].add_patch(rect)
-    # rect = patches.Rectangle(
-    #     (sample_negative_box[0], sample_negative_box[2]),
-    #     sample_negative_box[1] - sample_negative_box[0],
-    #     sample_negative_box[3] - sample_negative_box[2],
-    #     linewidth=1,
-    #     edgecolor='r',
-    #     facecolor='none')
-    # ax[0].add_patch(rect)
-    # rect = patches.Rectangle((real_boxes_resized[0][0], real_boxes_resized[0][2]),
-    #                          real_boxes_resized[0][1] - real_boxes_resized[0][0],
-    #                          real_boxes_resized[0][3] - real_boxes_resized[0][2], linewidth=1, edgecolor='g',
-    #                          facecolor='none')
-    # ax[0].add_patch(rect)
-    # ax[1].imshow(positive_image_part)
-    # ax[2].imshow(negative_image_part)
-    # ax[0].set_title('Original')
-    # ax[1].set_title('Positive')
-    # ax[2].set_title('Negative')
-    # plt.show()
-    # cv2.waitKey(0)
-    # ## "NOT NEEDED PART FOR WORKING" END ###
+    ## "NOT NEEDED PART FOR WORKING" BEGIN ###
+    #TO SEE!!! WHAT IS HAPPENING TILL NOW
+    fig, ax = plt.subplots(3)
+    ax[0].imshow(sample_image_resized)
+    rect = patches.Rectangle(
+        (sample_positive_box[0], sample_positive_box[2]),
+        sample_positive_box[1] - sample_positive_box[0],
+        sample_positive_box[3] - sample_positive_box[2],
+        linewidth=1,
+        edgecolor='b',
+        facecolor='none')
+    ax[0].add_patch(rect)
+    rect = patches.Rectangle(
+        (sample_negative_box[0], sample_negative_box[2]),
+        sample_negative_box[1] - sample_negative_box[0],
+        sample_negative_box[3] - sample_negative_box[2],
+        linewidth=1,
+        edgecolor='r',
+        facecolor='none')
+    ax[0].add_patch(rect)
+    rect = patches.Rectangle((real_boxes_resized[0][0], real_boxes_resized[0][2]),
+                             real_boxes_resized[0][1] - real_boxes_resized[0][0],
+                             real_boxes_resized[0][3] - real_boxes_resized[0][2], linewidth=1, edgecolor='g',
+                             facecolor='none')
+    ax[0].add_patch(rect)
+    ax[1].imshow(positive_image_part)
+    ax[2].imshow(negative_image_part)
+    ax[0].set_title('Original')
+    ax[1].set_title('Positive')
+    ax[2].set_title('Negative')
+    plt.show()
+    cv2.waitKey(0)
+    ## "NOT NEEDED PART FOR WORKING" END ###
 
     # make dataset
     positive_image_part = cv2.resize(positive_image_part, UNIFORM_IMG_SIZE, interpolation=cv2.INTER_AREA)
@@ -144,12 +139,14 @@ def process_single_image(labels):
     return dataset_img, dataset_labels
 
 
-def build_model(dataset_img, dataset_labels, input_shape):
+def build_model():
     # MODEL BUILDING BEGIN
     # FEATURE EXTRACTION LAYERS - TRANSFER LEARNING
 
     # input shape
-    keras_input_shape = Input(shape=(BOX_SIZES[2], BOX_SIZES[2], 3))
+    keras_input_shape =(BOX_SIZES[2], BOX_SIZES[2], 3)
+
+    keras_input = Input(shape=keras_input_shape)
 
     base_model = Xception(
         include_top=False,  # no dense layers in the end to classify so I can make my own
@@ -159,27 +156,12 @@ def build_model(dataset_img, dataset_labels, input_shape):
     base_model.trainable = False
 
     # OUR SEGMENT OF NETWORK - TRAINABLE
-    x = base_model(keras_input_shape, training=False)
+    x = base_model(keras_input, training=False)
     x = GlobalAveragePooling2D()(x)
     output = Dense(1)(x)
-    model = Model(keras_input_shape, output)
+    model = Model(keras_input, output)
 
-    # loss function
-    loss_fn = keras.losses.BinaryCrossentropy(from_logits=True)
-    # optimizer
-    optimizer = keras.optimizers.Adam()
-    # MODEL BUILDING END
-
-    with tf.GradientTape() as tape:
-        predictions = model(np.array(dataset_img, np.float32))
-        loss_value = loss_fn(np.array(dataset_labels, np.float32), predictions)
-    gradients = tape.gradient(loss_value, model.trainable_weights)
-    optimizer.apply_gradients(zip(gradients, model.trainable_weights))
-
-    print(loss_value)
-    print(model.predict(np.array(dataset_img, np.float32)))
-
-    return model, loss_fn, optimizer
+    return base_model, model
 
 
 def train_network():
@@ -187,11 +169,9 @@ def train_network():
     val_list = os.listdir(VAL_PATH)
 
     labels = get_labels()
-    input_shape = int(UNIFORM_IMG_SIZE[0] / 5)
 
-    #dataset_img, dataset_labels = process_single_image(labels)
+    base_model, model = build_model()
 
-    #model, loss_fn, optimizer = build_model(dataset_img, dataset_labels, input_shape)
 
     # for i in range(NUM_EPOCHS):
     #     # get a batch of data
@@ -221,7 +201,24 @@ def train_network():
     #     # Update the weights of the model.
     #     optimizer.apply_gradients(zip(gradients, model.trainable_weights))
     #
-    # #JESZCZE NIE DZIALA
-    batch_images, batch_labels = create_batch(BATCH_SIZE, train_list, labels, BOX_SIZES, BOX_SCALES)
-    print(batch_labels)
+
+    # # loss function
+    # loss_fn = keras.losses.BinaryCrossentropy(from_logits=True)
+    # # optimizer
+    # optimizer = keras.optimizers.Adam()
+    # # MODEL BUILDING END
+
+    # with tf.GradientTape() as tape:
+    #     predictions = model(np.array(dataset_img, np.float32))
+    #     loss_value = loss_fn(np.array(dataset_labels, np.float32), predictions)
+    # gradients = tape.gradient(loss_value, model.trainable_weights)
+    # optimizer.apply_gradients(zip(gradients, model.trainable_weights))
+
+    # print(loss_value)
+    # print(model.predict(np.array(dataset_img, np.float32)))
+
+
+    #batch_images, batch_labels = create_batch(BATCH_SIZE, train_list, labels, BOX_SIZES, BOX_SCALES)
+    #print(batch_labels)
+
     print('Training done!')

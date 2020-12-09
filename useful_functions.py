@@ -109,16 +109,9 @@ def create_batch(batch_size, train_list, labels, box_sizes, box_scales,
         # marked boxes
         positive_boxes, negative_boxes = mark_boxes(x_resized, y_resized, box_sizes, box_scales, real_boxes_resized,
                                                     positive_box_threshold)
-        print("negative length:")
-        print(len(negative_boxes))
-        print("positive length:")
-        print(len(positive_boxes))
-        print("\n\nACK0\n\n")
-        print("batch length:")
-        print(len(batch_images))
+
         # creating a batch
         if 2 * len(positive_boxes) <= (batch_size - len(batch_images)):
-            print("\n\nACK1\n\n")
             for box in positive_boxes:
                 batch_images.append(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3])
                 batch_labels.append([1])
@@ -128,7 +121,6 @@ def create_batch(batch_size, train_list, labels, box_sizes, box_scales,
                 batch_images.append(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3])
                 batch_labels.append([0])
         else:
-            print("\n\nACK2\n\n")
             positive_boxes = random.sample(positive_boxes, k = int((batch_size - len(batch_images)) / 2))
             negative_boxes = random.sample(negative_boxes, k = int((batch_size - len(batch_images)) / 2))  # same amount of negative and positive from an image
             for box in positive_boxes:
