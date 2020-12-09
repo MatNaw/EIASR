@@ -31,7 +31,11 @@ def get_labels():
     return labels_list
 
 
-def process_single_image(train_list, labels, input_shape):
+def process_single_image(labels):
+
+    train_list = os.listdir(TRAIN_PATH)
+    val_list = os.listdir(VAL_PATH)
+
     # get an image from training pool
     sample_name = random.choice(train_list)
     # GOOD EXAMPLE BELOW - UNCOMMENT IF YOU WANT TO UNDERSTAND
@@ -88,8 +92,8 @@ def process_single_image(train_list, labels, input_shape):
                           sample_negative_box[0]:sample_negative_box[1],
                           0:3]
 
-    ### "NOT NEEDED PART FOR WORKING" BEGIN ###
-    # TO SEE!!! WHAT IS HAPPENING TILL NOW
+    # ## "NOT NEEDED PART FOR WORKING" BEGIN ###
+    # #TO SEE!!! WHAT IS HAPPENING TILL NOW
     # fig, ax = plt.subplots(3)
     # ax[0].imshow(sample_image_resized)
     # rect = patches.Rectangle(
@@ -120,15 +124,15 @@ def process_single_image(train_list, labels, input_shape):
     # ax[2].set_title('Negative')
     # plt.show()
     # cv2.waitKey(0)
-    ### "NOT NEEDED PART FOR WORKING" END ###
+    # ## "NOT NEEDED PART FOR WORKING" END ###
 
     # make dataset
-    positive_image_part = cv2.resize(positive_image_part, (input_shape, input_shape), interpolation=cv2.INTER_AREA)
+    positive_image_part = cv2.resize(positive_image_part, UNIFORM_IMG_SIZE, interpolation=cv2.INTER_AREA)
     positive_image_part = np.array(positive_image_part)
     positive_image_part.astype('float32')
     positive_image_part = positive_image_part / 255
 
-    negative_image_part = cv2.resize(negative_image_part, (input_shape, input_shape), interpolation=cv2.INTER_AREA)
+    negative_image_part = cv2.resize(negative_image_part, UNIFORM_IMG_SIZE, interpolation=cv2.INTER_AREA)
     negative_image_part = np.array(negative_image_part)
     negative_image_part.astype('float32')
     negative_image_part = negative_image_part / 255
@@ -150,7 +154,7 @@ def build_model(dataset_img, dataset_labels, input_shape):
     base_model = Xception(
         include_top=False,  # no dense layers in the end to classify so I can make my own
         weights=FEATURE_WEIGHTS_PATH,
-        input_shape=(input_shape, input_shape, 3)
+        input_shape=keras_input_shape
     )
     base_model.trainable = False
 
@@ -185,21 +189,9 @@ def train_network():
     labels = get_labels()
     input_shape = int(UNIFORM_IMG_SIZE[0] / 5)
 
-    dataset_img, dataset_labels = process_single_image(train_list, labels, input_shape)
-    ###
-    # model=tf.keras.Sequential(
-    #         [
-    #             tf.keras.layers.InputLayer(input_shape=(input_shape,input_shape, 3)),
-    #             tf.keras.layers.Conv2D(filters=32, kernel_size=3, strides=(2, 2), activation='relu'),
-    #             tf.keras.layers.Conv2D(filters=64, kernel_size=3, strides=(2, 2), activation='relu'),
-    #             tf.keras.layers.Flatten(),
-    #             tf.keras.layers.Dense(2)
-    #         ])
-    # model.compile(optimizer='rmsprop', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-    # model.fit(x=np.array(dataset_img, np.float32), y=np.array(dataset_labels, np.float32), epochs=5)
-    # print(model.predict(x=np.array(dataset_img, np.float32)))
-    ###
-    model, loss_fn, optimizer = build_model(dataset_img, dataset_labels, input_shape)
+    #dataset_img, dataset_labels = process_single_image(labels)
+
+    #model, loss_fn, optimizer = build_model(dataset_img, dataset_labels, input_shape)
 
     # for i in range(NUM_EPOCHS):
     #     # get a batch of data
@@ -230,6 +222,6 @@ def train_network():
     #     optimizer.apply_gradients(zip(gradients, model.trainable_weights))
     #
     # #JESZCZE NIE DZIALA
-    #batch_images, batch_labels = create_batch(BATCH_SIZE, train_list, TRAIN_PATH, labels, BOX_SIZES, BOX_SCALES)
-    #print(batch_labels)
+    batch_images, batch_labels = create_batch(BATCH_SIZE, train_list, labels, BOX_SIZES, BOX_SCALES)
+    print(batch_labels)
     print('Training done!')

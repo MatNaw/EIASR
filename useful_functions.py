@@ -80,12 +80,12 @@ def mark_boxes(x_resized, y_resized, box_sizes, box_scales, real_boxes_resized, 
 
 
 # JESZCZE NIE DZIALA POPRAWNIE
-def create_batch(batch_size, train_list, labels, box_sizes, box_scales, uniform_img_size=UNIFORM_IMG_SIZE,
+def create_batch(batch_size, train_list, labels, box_sizes, box_scales,
                  positive_box_threshold=0.4):
     batch_images = []
     batch_labels = []
-    x_resized = uniform_img_size[0]
-    y_resized = uniform_img_size[1]
+    x_resized = UNIFORM_IMG_SIZE[0]
+    y_resized = UNIFORM_IMG_SIZE[1]
 
     while len(batch_images) < batch_size:
         sample_name = random.choice(train_list)
@@ -94,7 +94,7 @@ def create_batch(batch_size, train_list, labels, box_sizes, box_scales, uniform_
         sample_image_resized = cv2.resize(sample_image, UNIFORM_IMG_SIZE, interpolation=cv2.INTER_AREA)
         x_ratio = x_sample_shape / x_resized
         y_ratio = y_sample_shape / y_resized
-
+        
         # getting real_boxes from image' labels
         real_boxes_resized = []
         for label in labels:
@@ -114,10 +114,8 @@ def create_batch(batch_size, train_list, labels, box_sizes, box_scales, uniform_
         print("positive length:")
         print(len(positive_boxes))
         print("\n\nACK0\n\n")
+        print("batch length:")
         print(len(batch_images))
-        print("\n\n")
-        print(len(batch_labels))
-
         # creating a batch
         if 2 * len(positive_boxes) <= (batch_size - len(batch_images)):
             print("\n\nACK1\n\n")
@@ -132,10 +130,10 @@ def create_batch(batch_size, train_list, labels, box_sizes, box_scales, uniform_
         else:
             print("\n\nACK2\n\n")
             positive_boxes = random.sample(positive_boxes, k = int((batch_size - len(batch_images)) / 2))
+            negative_boxes = random.sample(negative_boxes, k = int((batch_size - len(batch_images)) / 2))  # same amount of negative and positive from an image
             for box in positive_boxes:
                 batch_images.append(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3])
                 batch_labels.append([1])
-            negative_boxes = random.sample(negative_boxes, k = int((batch_size - len(batch_images)) / 2))  # same amount of negative and positive from an image
             for box in negative_boxes:
                 batch_images.append(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3])
                 batch_labels.append([0])
