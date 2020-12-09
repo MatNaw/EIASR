@@ -1,5 +1,6 @@
 import cv2
 import random
+import numpy as np
 
 from constants import TRAIN_PATH, UNIFORM_IMG_SIZE
 
@@ -113,21 +114,21 @@ def create_batch(batch_size, train_list, labels, box_sizes, box_scales,
         # creating a batch
         if 2 * len(positive_boxes) <= (batch_size - len(batch_images)):
             for box in positive_boxes:
-                batch_images.append(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3])
-                batch_labels.append([1])
+                batch_images.append(np.array(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], np.float32))
+                batch_labels.append(np.array([1], np.float32))
             negative_boxes = random.sample(negative_boxes,
                                            len(positive_boxes))  # same amount of negative and positive from an image
             for box in negative_boxes:
-                batch_images.append(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3])
-                batch_labels.append([0])
+                batch_images.append(np.array(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], np.float32))
+                batch_labels.append(np.array([0], np.float32))
         else:
             positive_boxes = random.sample(positive_boxes, k = int((batch_size - len(batch_images)) / 2))
             negative_boxes = random.sample(negative_boxes, k = int((batch_size - len(batch_images)) / 2))  # same amount of negative and positive from an image
             for box in positive_boxes:
-                batch_images.append(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3])
-                batch_labels.append([1])
+                batch_images.append(np.array(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], np.float32))
+                batch_labels.append(np.array([1], np.float32))
             for box in negative_boxes:
-                batch_images.append(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3])
-                batch_labels.append([0])
+                batch_images.append(np.array(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], np.float32))
+                batch_labels.append(np.array([0], np.float32))
 
     return batch_images, batch_labels

@@ -12,7 +12,7 @@ from tensorflow.keras.applications.xception import Xception
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Input
 from tensorflow.keras.models import Model
 
-from constants import BOX_SCALES, BOX_SIZES, FEATURE_WEIGHTS_PATH, LABEL_PATH, TRAIN_PATH, UNIFORM_IMG_SIZE, VAL_PATH, BATCH_SIZE
+from constants import BOX_SCALES, BOX_SIZES, FEATURE_WEIGHTS_PATH, LABEL_PATH, TRAIN_PATH, UNIFORM_IMG_SIZE, VAL_PATH, BATCH_SIZE, NUM_EPOCHS, MODEL_PATH
 from useful_functions import mark_boxes, create_batch
 
 
@@ -171,8 +171,13 @@ def train_network():
     labels = get_labels()
 
     base_model, model = build_model()
+    loss_fn = keras.losses.BinaryCrossentropy(from_logits=True)
+    optimizer = keras.optimizers.Adam()
+
+    images, labels =create_batch(BATCH_SIZE, train_list, labels, BOX_SIZES, BOX_SCALES, positive_box_threshold=0.4)
 
 
+    model.save(MODEL_PATH)
     # for i in range(NUM_EPOCHS):
     #     # get a batch of data
     #     positive_samples = []
