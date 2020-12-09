@@ -91,7 +91,7 @@ def create_batch(batch_size, train_list, labels, box_sizes, box_scales, uniform_
         sample_name = random.choice(train_list)
         sample_image = cv2.imread(TRAIN_PATH + '/' + sample_name)
         (y_sample_shape, x_sample_shape, _) = sample_image.shape
-        sample_image_resized = cv2.resize(sample_image, uniform_img_size, interpolation=cv2.INTER_AREA)
+        sample_image_resized = cv2.resize(sample_image, UNIFORM_IMG_SIZE, interpolation=cv2.INTER_AREA)
         x_ratio = x_sample_shape / x_resized
         y_ratio = y_sample_shape / y_resized
 
@@ -131,12 +131,11 @@ def create_batch(batch_size, train_list, labels, box_sizes, box_scales, uniform_
                 batch_labels.append([0])
         else:
             print("\n\nACK2\n\n")
-            positive_boxes = random.sample(positive_boxes, int((batch_size - len(batch_images)) / 2))
+            positive_boxes = random.sample(positive_boxes, k = int((batch_size - len(batch_images)) / 2))
             for box in positive_boxes:
                 batch_images.append(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3])
                 batch_labels.append([1])
-            negative_boxes = random.sample(negative_boxes, int(
-                (batch_size - len(batch_images)) / 2))  # same amount of negative and positive from an image
+            negative_boxes = random.sample(negative_boxes, k = int((batch_size - len(batch_images)) / 2))  # same amount of negative and positive from an image
             for box in negative_boxes:
                 batch_images.append(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3])
                 batch_labels.append([0])

@@ -12,8 +12,8 @@ from tensorflow.keras.applications.xception import Xception
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Input
 from tensorflow.keras.models import Model
 
-from constants import BOX_SCALES, BOX_SIZES, FEATURE_WEIGHTS_PATH, LABEL_PATH, TRAIN_PATH, UNIFORM_IMG_SIZE, VAL_PATH
-from useful_functions import mark_boxes
+from constants import BOX_SCALES, BOX_SIZES, FEATURE_WEIGHTS_PATH, LABEL_PATH, TRAIN_PATH, UNIFORM_IMG_SIZE, VAL_PATH, BATCH_SIZE
+from useful_functions import mark_boxes, create_batch
 
 
 def get_labels():
@@ -67,6 +67,12 @@ def process_single_image(train_list, labels, input_shape):
 
     positive_boxes, negative_boxes = mark_boxes(x_resized_shape, y_resized_shape, BOX_SIZES, BOX_SCALES,
                                                 real_boxes_resized, positive_box_threshold)
+
+    print("\nACK3 len positive\n")
+    print(len(positive_boxes))
+    print("\n")
+    print(len(negative_boxes))
+    print("ACK4")
 
     # since we have boxes let's pick one positive and one negative
     sample_positive_box = random.choice(positive_boxes)
@@ -224,6 +230,6 @@ def train_network():
     #     optimizer.apply_gradients(zip(gradients, model.trainable_weights))
     #
     # #JESZCZE NIE DZIALA
-    # batch_images, batch_labels = create_batch(BATCH_SIZE, train_list, TRAIN_PATH, labels, BOX_SIZES, BOX_SCALES)
-    # print(batch_labels)
+    #batch_images, batch_labels = create_batch(BATCH_SIZE, train_list, TRAIN_PATH, labels, BOX_SIZES, BOX_SCALES)
+    #print(batch_labels)
     print('Training done!')
