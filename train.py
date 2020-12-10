@@ -11,9 +11,10 @@ from tensorflow import keras
 from tensorflow.keras.applications.xception import Xception
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Input
 from tensorflow.keras.models import Model
+from tensorflow.keras import optimizers
 
-from constants import BOX_SCALES, BOX_SIZES, FEATURE_WEIGHTS_PATH, LABEL_PATH, TRAIN_PATH, UNIFORM_IMG_SIZE, VAL_PATH, BATCH_SIZE, NUM_EPOCHS, MODEL_PATH
-from useful_functions import mark_boxes, create_batch
+from constants import BOX_SCALES, BOX_SIZES, FEATURE_WEIGHTS_PATH, LABEL_PATH, TRAIN_PATH, UNIFORM_IMG_SIZE, VAL_PATH, BATCH_SIZE, NUM_EPOCHS, EPOCH_LENGTH, MODEL_PATH
+from useful_functions import mark_boxes, create_batch, create_batch_list
 
 
 def get_labels():
@@ -42,7 +43,7 @@ def process_single_image(labels):
     # sample_name = 'drones-inspire-phantom-mavic-on-260nw-1139013731.jpg'
 
     sample_image = cv2.imread(TRAIN_PATH + '/' + sample_name)
-    sample_image_resized = cv2.resize(sample_image, UNIFORM_IMG_SIZE, interpolation=cv2.INTER_AREA)
+    sample_image_resized = cv2.resize(sample_image, UNIFORM_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
     (y_sample_shape, x_sample_shape, _) = sample_image.shape
     (y_resized_shape, x_resized_shape, _) = sample_image_resized.shape
     x_ratio = x_sample_shape / x_resized_shape
@@ -122,12 +123,12 @@ def process_single_image(labels):
     ## "NOT NEEDED PART FOR WORKING" END ###
 
     # make dataset
-    positive_image_part = cv2.resize(positive_image_part, UNIFORM_IMG_SIZE, interpolation=cv2.INTER_AREA)
+    positive_image_part = cv2.resize(positive_image_part, UNIFORM_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
     positive_image_part = np.array(positive_image_part)
     positive_image_part.astype('float32')
     positive_image_part = positive_image_part / 255
 
-    negative_image_part = cv2.resize(negative_image_part, UNIFORM_IMG_SIZE, interpolation=cv2.INTER_AREA)
+    negative_image_part = cv2.resize(negative_image_part, UNIFORM_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
     negative_image_part = np.array(negative_image_part)
     negative_image_part.astype('float32')
     negative_image_part = negative_image_part / 255
@@ -171,59 +172,53 @@ def train_network():
     labels = get_labels()
 
     base_model, model = build_model()
-    loss_fn = keras.losses.BinaryCrossentropy(from_logits=True)
+    loss_fn = keras.losses.BinaryCrossentropy()
     optimizer = keras.optimizers.Adam()
 
-    images, labels =create_batch(BATCH_SIZE, train_list, labels, BOX_SIZES, BOX_SCALES, positive_box_threshold=0.4)
+    #dataset = create_batch_list(train_list, labels, positive_box_threshold=0.4)
+    #(x, y) = dataset[5]
+    #print(y)
 
+    #x, y = create_batch(BATCH_SIZE, train_list, labels, BOX_SIZES, BOX_SCALES, positive_box_threshold=0.4)
 
-    model.save(MODEL_PATH)
-    # for i in range(NUM_EPOCHS):
-    #     # get a batch of data
-    #     positive_samples = []
-    #     negative_samples = []
-    #     while len(positive_samples) < BATCH_SIZE / 2:
-    #         sample_name = random.choice(train_list)
-
-    # model.compile(optimizer=optimizer, loss=loss_fn)
-    # test_loss, test_accuracy = model.evaluate(
-    #     np.array(dataset_img, np.float32),
-    #     np.array(dataset_labels, np.float32),
-    #     verbose=2)
-    # print(test_loss)
-    #
-    # # iterate over the batches of a dataset.
-    # for inputs, targets in dataset:
-    #     # open a GradientTape
-    #     with tf.GradientTape() as tape:
-    #         # Forward pass.
-    #         predictions = model(inputs)
-    #         # Compute the loss value for this batch.
-    #         loss_value = loss_fn(targets, predictions)
-    #
-    #     # get gradients of loss wrt the *trainable* weights.
-    #     gradients = tape.gradient(loss_value, model.trainable_weights)
-    #     # Update the weights of the model.
-    #     optimizer.apply_gradients(zip(gradients, model.trainable_weights))
-    #
-
-    # # loss function
-    # loss_fn = keras.losses.BinaryCrossentropy(from_logits=True)
-    # # optimizer
-    # optimizer = keras.optimizers.Adam()
-    # # MODEL BUILDING END
+    model.compile(loss='binary_crossentropy', optimizer=optimizers.RMSprop(lr=1e-4), metrics=['acc'] )
+    for epoch in range(NUM_EPOCHS):
+        print("\n\n\nEPOCH: %d\n\n\n" % epoch)
+        dataset = create_batch_list(train_list, labels, positive_box_threshold=0.4)
+        for (x, y) in dataset:
+            error_train = model.train_on_batch(np.array(x), np.array(y))
+            print("Train error: %lf, Accuracy: %lf" % (error_train[0], error_train[1]))
+            # print("Test error")
+            # print(error)
 
     # with tf.GradientTape() as tape:
-    #     predictions = model(np.array(dataset_img, np.float32))
-    #     loss_value = loss_fn(np.array(dataset_labels, np.float32), predictions)
-    # gradients = tape.gradient(loss_value, model.trainable_weights)
-    # optimizer.apply_gradients(zip(gradients, model.trainable_weights))
+    #     tape.watch(model.trainable_weights)
+    #     y_pred = model.predict(np.array(x))
+    #     loss_value = loss_fn(y, y_pred)
+    #     print(loss_value)
+    #     print(loss_value.numpy())
+    #     grads = tape.gradient(loss_value, model.trainable_weights)
+        # optimizer.apply_gradients(zip(grads, model.trainable_weights))
 
-    # print(loss_value)
-    # print(model.predict(np.array(dataset_img, np.float32)))
+    # for epoch in range(NUM_EPOCHS):
+    #     print("\nEPOCH NR: %d, Loading data" % epoch)
+    #     dataset = create_batch_list(train_list, labels, positive_box_threshold=0.4)
+    #     print("Train data loaded")
+    #     step = 0
+    #     for (x_batch, y_batch) in dataset:
+    #         with tf.GradientTape() as tape:
+    #             logits = model(x_batch, training=True)
+    #             loss_value = loss_fn(y_batch, logits)
+    #             grads = tape.gradient(loss_value, model.trainable_weights)
+    #             optimizer.apply_gradients(zip(grads, model.trainable_weights))
 
+    #         if step % 20 == 0:
+    #             print("Training loss (for one batch) at step %d: %.4f"
+    #             % (step, float(loss_value)))
+    #         step = step + 1
+            
 
-    #batch_images, batch_labels = create_batch(BATCH_SIZE, train_list, labels, BOX_SIZES, BOX_SCALES)
-    #print(batch_labels)
+    model.save(MODEL_PATH)
+    
 
     print('Training done!')

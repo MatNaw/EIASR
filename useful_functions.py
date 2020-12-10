@@ -2,7 +2,7 @@ import cv2
 import random
 import numpy as np
 
-from constants import TRAIN_PATH, UNIFORM_IMG_SIZE
+from constants import TRAIN_PATH, UNIFORM_IMG_SIZE, EPOCH_LENGTH, BATCH_SIZE, BOX_SIZES, BOX_SCALES, KERAS_IMG_SIZE
 
 FIRST_ANCHOR_X = 5  # pixels
 FIRST_ANCHOR_Y = 5  # pixels
@@ -90,12 +90,12 @@ def create_batch(batch_size, train_list, labels, box_sizes, box_scales,
 
     while len(batch_images) < batch_size:
         sample_name = random.choice(train_list)
-        sample_image = cv2.imread(TRAIN_PATH + '/' + sample_name)
+        sample_image = cv2.imread(TRAIN_PATH + '/' + sample_name).astype(np.float32)/255.0
         (y_sample_shape, x_sample_shape, _) = sample_image.shape
-        sample_image_resized = cv2.resize(sample_image, UNIFORM_IMG_SIZE, interpolation=cv2.INTER_AREA)
+        sample_image_resized = cv2.resize(sample_image, UNIFORM_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
         x_ratio = x_sample_shape / x_resized
         y_ratio = y_sample_shape / y_resized
-        
+
         # getting real_boxes from image' labels
         real_boxes_resized = []
         for label in labels:
@@ -114,21 +114,38 @@ def create_batch(batch_size, train_list, labels, box_sizes, box_scales,
         # creating a batch
         if 2 * len(positive_boxes) <= (batch_size - len(batch_images)):
             for box in positive_boxes:
-                batch_images.append(np.array(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], np.float32))
-                batch_labels.append(np.array([1], np.float32))
+                resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], KERAS_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
+                batch_images.append(resize_for_keras)
+                batch_labels.append(1.0)
             negative_boxes = random.sample(negative_boxes,
                                            len(positive_boxes))  # same amount of negative and positive from an image
             for box in negative_boxes:
-                batch_images.append(np.array(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], np.float32))
-                batch_labels.append(np.array([0], np.float32))
+                resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], KERAS_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
+                batch_images.append(resize_for_keras)
+                batch_labels.append(0.0)
         else:
             positive_boxes = random.sample(positive_boxes, k = int((batch_size - len(batch_images)) / 2))
             negative_boxes = random.sample(negative_boxes, k = int((batch_size - len(batch_images)) / 2))  # same amount of negative and positive from an image
             for box in positive_boxes:
-                batch_images.append(np.array(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], np.float32))
-                batch_labels.append(np.array([1], np.float32))
+                resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], KERAS_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
+                batch_images.append(resize_for_keras)
+                batch_labels.append(1.0)
             for box in negative_boxes:
-                batch_images.append(np.array(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], np.float32))
-                batch_labels.append(np.array([0], np.float32))
+                resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], KERAS_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
+                batch_images.append(resize_for_keras)
+                batch_labels.append(0.0)
 
     return batch_images, batch_labels
+
+def create_batch_list(train_list, labels, positive_box_threshold=0.4):
+
+    dataset=[]
+
+    for step in range(EPOCH_LENGTH):
+        batch_images, batch_labels = create_batch(BATCH_SIZE, train_list, labels, BOX_SIZES, BOX_SCALES, positive_box_threshold=positive_box_threshold)
+
+        dataset.append((batch_images,batch_labels))
+
+    return dataset
+
+def create_test_data(test_list, labels, positive_box_threshold=0.4)
