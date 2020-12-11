@@ -148,4 +148,52 @@ def create_batch_list(train_list, labels, positive_box_threshold=0.4):
 
     return dataset
 
-def create_test_data(test_list, labels, positive_box_threshold=0.4)
+
+
+def create_test_data(test_list, labels, path, positive_box_threshold=0.4, batch_size=100):
+    test_images = []
+    test_labels = []
+
+    x_resized = UNIFORM_IMG_SIZE[0]
+    y_resized = UNIFORM_IMG_SIZE[1]
+
+    i = 0
+    i_max = 150
+
+
+    while len(test_labels) < batch_size:
+
+        sample_name = random.choice(test_list)
+        sample_image = cv2.imread(path + '/' + sample_name).astype(np.float32)/255.0
+        (y_sample_shape, x_sample_shape, _) = sample_image.shape
+        sample_image_resized = cv2.resize(sample_image, UNIFORM_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
+        x_ratio = x_sample_shape / x_resized
+        y_ratio = y_sample_shape / y_resized
+
+        real_boxes_resized = []
+        for label in labels:
+            if label[0] == sample_name:
+                real_boxes_resized.append([
+                    round(int(label[2]) / x_ratio),
+                    round(int(label[3]) / x_ratio),
+                    round(int(label[4]) / y_ratio),
+                    round(int(label[5]) / y_ratio)
+                ])
+
+        positive_boxes, negative_boxes = mark_boxes(x_resized, y_resized, BOX_SIZES, BOX_SCALES, real_boxes_resized,
+                                                    positive_box_threshold)
+
+        try:
+            box = random.choice(positive_boxes)
+        except:
+            continue
+        resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], KERAS_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
+        test_images.append(resize_for_keras)
+        test_labels.append(1.0)
+
+        box = random.choice(negative_boxes)
+        resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], KERAS_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
+        test_images.append(resize_for_keras)
+        test_labels.append(0.0)
+
+    return test_images, test_labels

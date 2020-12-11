@@ -14,7 +14,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras import optimizers
 
 from constants import BOX_SCALES, BOX_SIZES, FEATURE_WEIGHTS_PATH, LABEL_PATH, TRAIN_PATH, UNIFORM_IMG_SIZE, VAL_PATH, BATCH_SIZE, NUM_EPOCHS, EPOCH_LENGTH, MODEL_PATH
-from useful_functions import mark_boxes, create_batch, create_batch_list
+from useful_functions import mark_boxes, create_batch, create_batch_list, create_test_data
 
 
 def get_labels():
@@ -180,16 +180,24 @@ def train_network():
     #print(y)
 
     #x, y = create_batch(BATCH_SIZE, train_list, labels, BOX_SIZES, BOX_SCALES, positive_box_threshold=0.4)
-
+    print("Loading val data")
+    val_imgs, val_labels = create_test_data(val_list, labels, VAL_PATH, positive_box_threshold=0.6)
+    print("val data loaded!")
+    print("NUM val samples: %d" % (len(val_labels)))
+    
     model.compile(loss='binary_crossentropy', optimizer=optimizers.RMSprop(lr=1e-4), metrics=['acc'] )
     for epoch in range(NUM_EPOCHS):
-        print("\n\n\nEPOCH: %d\n\n\n" % epoch)
-        dataset = create_batch_list(train_list, labels, positive_box_threshold=0.4)
+        print("\n\n\nEPOCH: %d" % epoch)
+        dataset = create_batch_list(train_list, labels, positive_box_threshold=0.6)
         for (x, y) in dataset:
             error_train = model.train_on_batch(np.array(x), np.array(y))
-            print("Train error: %lf, Accuracy: %lf" % (error_train[0], error_train[1]))
+            # print("Train error: %lf, Accuracy: %lf" % (error_train[0], error_train[1]))
             # print("Test error")
             # print(error)
+        error_val = model.test_on_batch(np.array(val_imgs), np.array(val_labels))
+        print("Train error: %lf, Accuracy: %lf" % (error_train[0], error_train[1]))
+        print("Validation Error: %lf, Accuracy: %lf" % (error_val[0], error_val[1]))
+        
 
     # with tf.GradientTape() as tape:
     #     tape.watch(model.trainable_weights)
