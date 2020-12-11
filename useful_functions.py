@@ -197,3 +197,15 @@ def create_test_data(test_list, labels, path, positive_box_threshold=0.4, batch_
         test_labels.append(0.0)
 
     return test_images, test_labels
+
+
+
+#box = [xmin, xmax, ymin, ymax]
+def cut_on_edges(img_shape, box):
+    xmin = int(max(0, box[0]))
+    ymin = int(max(0, box[2]))
+    xmax = int(min(img_shape[1], box[1]))
+    ymax = int(min(img_shape[0], box[3]))
+
+    return [xmin, xmax, ymin, ymax]
+
