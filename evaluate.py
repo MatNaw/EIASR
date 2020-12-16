@@ -3,7 +3,7 @@ import random
 import numpy as np
 from csv import reader
 
-from useful_functions import cut_on_edges
+from useful_functions import cut_on_edges, NMS
 from constants import TO_PREDICT_PATH, PREDICTED_PATH, UNIFORM_IMG_SIZE, FIRST_ANCHOR_X, FIRST_ANCHOR_Y, ANCHOR_STEP_X, ANCHOR_STEP_Y, BOX_SIZES, BOX_SCALES, KERAS_IMG_SIZE
 from train import build_model
 import cv2
@@ -28,10 +28,11 @@ def predict_images():
         x_ratio = x_sample_shape / x_resized
         y_ratio = y_sample_shape / y_resized
 
-        anchors_along_x = round((x_resized - FIRST_ANCHOR_X) / ANCHOR_STEP_X) + 1  # On scaled image
-        anchors_along_y = round((y_resized - FIRST_ANCHOR_Y) / ANCHOR_STEP_Y) + 1  
+        anchors_along_x = int((x_resized - FIRST_ANCHOR_X) / ANCHOR_STEP_X) + 1  # On scaled image
+        anchors_along_y = int((y_resized - FIRST_ANCHOR_Y) / ANCHOR_STEP_Y) + 1  
 
         Drones = []
+        Drones_marks = []
 
         boxes = []
         predictions = []
@@ -42,6 +43,7 @@ def predict_images():
 
         bol = 1
 
+        k=0
         remaining = anchors_along_x*anchors_along_y*len(BOX_SCALES)*len(BOX_SIZES)
         print("Remaining: %d" % remaining)
         for i in range(anchors_along_x):
@@ -61,8 +63,12 @@ def predict_images():
                         if remaining >= iterator_max:
                             if iterator == iterator_max:
                                 y_pred = model.predict_on_batch(np.array(keras_input))
-                                y = np.concatenate(y_pred, axis = 0)
-                                predictions = np.concatenate((predictions, y), axis = 0)
+                                for pred in y_pred:
+                                    if np.argmax(pred) == 1:
+                                        if pred[1] >= 0.9:
+                                            Drones.append(boxes[k])
+                                            Drones_marks.append(pred[1])
+                                    k = k + 1
                                 keras_input = []
                                 remaining = remaining - iterator
                                 iterator = 0
@@ -70,20 +76,34 @@ def predict_images():
                         else:
                             if iterator == remaining:
                                 y_pred = model.predict_on_batch(np.array(keras_input))
-                                y = np.concatenate(y_pred, axis = 0)
-                                predictions = np.concatenate((predictions, y), axis = 0)
+                                for pred in y_pred:
+                                    if np.argmax(pred) == 1:
+                                        if pred[1] >= 0.9:
+                                            Drones.append(boxes[k])
+                                            Drones_marks.append(pred[1])
+                                    k = k + 1                
                                 keras_input = []
                                 remaining = remaining - iterator
                                 iterator = 0
                                 print("REMAINING: %d" % remaining)
                         
-        argmax = np.argmax(predictions)
-        our_box = boxes[argmax]
 
-        our_box = [int(our_box[0]*x_ratio), int(our_box[1]*x_ratio), int(our_box[2]*y_ratio), int(our_box[3]*y_ratio)]
+                        
+        # argmax = np.argmax(predictions)
+        # liczba = -100
+        # l=0
+        Drones = NMS(Drones, Drones_marks, IoU_threshold=0.1)
 
-        cv2.rectangle(sample_image1, (our_box[0], our_box[2]), (our_box[1], our_box[3]), (255,0,0), 2)
-        cv2.imwrite(PREDICTED_PATH + '/' + image, sample_image1) 
+        for drone in Drones:
+            drone = [int(drone[0]*x_ratio), int(drone[1]*x_ratio), int(drone[2]*y_ratio), int(drone[3]*y_ratio)]
+            cv2.rectangle(sample_image1, (drone[0], drone[2]), (drone[1], drone[3]), (255,0,0), 2)
+        # our_box = boxes[argmax]
+
+        # our_box = [int(our_box[0]*x_ratio), int(our_box[1]*x_ratio), int(our_box[2]*y_ratio), int(our_box[3]*y_ratio)]
+
+        # cv2.rectangle(sample_image1, (our_box[0], our_box[2]), (our_box[1], our_box[3]), (255,0,0), 2)
+        cv2.imwrite(PREDICTED_PATH + '/' + image, sample_image1)
+        print(len(Drones))
         print("NEXT DONE")
 
 
