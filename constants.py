@@ -5,11 +5,11 @@ from math import sqrt
 # paths
 TRAIN_PATH = './train_images'
 VAL_PATH = './val_images'
-LABEL_PATH = './data/labels.csv'
+LABEL_PATH = './labels.csv'
 TO_PREDICT_PATH = './to_predict'
 PREDICTED_PATH = './predicted'
 FEATURE_WEIGHTS_PATH = './xception_weights_tf_dim_ordering_tf_kernels_notop.h5'
-MODEL_PATH = './data/model.h5'
+MODEL_PATH = './model.h5'
 
 # uniform image size
 UNIFORM_IMG_SIZE = (400, 400)
