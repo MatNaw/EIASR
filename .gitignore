@@ -3,7 +3,7 @@
 train_images
 val_images
 test_images
+predicted
+to_predict
 model.h5
-./predicted
-./to_predict/
 __pycache__
