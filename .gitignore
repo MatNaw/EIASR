@@ -1,7 +1,5 @@
 .git
 .idea
-predicted
-to_predict
 train_images
 val_images
 test_images

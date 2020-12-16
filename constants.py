@@ -5,11 +5,11 @@ from math import sqrt
 # paths
 TRAIN_PATH = './train_images'
 VAL_PATH = './val_images'
-LABEL_PATH = './labels.csv'
+LABEL_PATH = './data/labels.csv'
 TO_PREDICT_PATH = './to_predict'
 PREDICTED_PATH = './predicted'
 FEATURE_WEIGHTS_PATH = './xception_weights_tf_dim_ordering_tf_kernels_notop.h5'
-MODEL_PATH = './model.h5'
+MODEL_PATH = './data/model.h5'
 
 # uniform image size
 UNIFORM_IMG_SIZE = (400, 400)
@@ -22,8 +22,8 @@ KERAS_IMG_SIZE = (BOX_SIZES[2], BOX_SIZES[2])
 # anchors
 FIRST_ANCHOR_X = 5  # pixels
 FIRST_ANCHOR_Y = 5  # pixels
-ANCHOR_STEP_X = 5
-ANCHOR_STEP_Y = 5
+ANCHOR_STEP_X = 20
+ANCHOR_STEP_Y = 20
 
 # training
 BATCH_SIZE = 32

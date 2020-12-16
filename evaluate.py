@@ -4,19 +4,17 @@ import numpy as np
 from csv import reader
 
 from useful_functions import cut_on_edges
-from constants import TO_PREDICT_PATH, PREDICTED_PATH, UNIFORM_IMG_SIZE, FIRST_ANCHOR_X, FIRST_ANCHOR_Y, ANCHOR_STEP_X, ANCHOR_STEP_Y, BOX_SIZES, BOX_SCALES, KERAS_IMG_SIZE
+from constants import TO_PREDICT_PATH, PREDICTED_PATH, UNIFORM_IMG_SIZE, FIRST_ANCHOR_X, FIRST_ANCHOR_Y, \
+    ANCHOR_STEP_X, ANCHOR_STEP_Y, BOX_SIZES, BOX_SCALES, KERAS_IMG_SIZE, MODEL_PATH
 from train import build_model
 import cv2
-
-
 
 
 def predict_images():
     pred_list = os.listdir(TO_PREDICT_PATH)
 
     (_, model) = build_model()
-    model.load_weights('./model.h5')
-
+    model.load_weights(MODEL_PATH)
 
     (y_resized, x_resized) = UNIFORM_IMG_SIZE
 
@@ -32,14 +30,11 @@ def predict_images():
         anchors_along_y = round((y_resized - FIRST_ANCHOR_Y) / ANCHOR_STEP_Y) + 1  
 
         Drones = []
-
         boxes = []
         predictions = []
-
         iterator = 0
         keras_input = []
         iterator_max = 100
-
         bol = 1
 
         remaining = anchors_along_x*anchors_along_y*len(BOX_SCALES)*len(BOX_SIZES)
@@ -58,24 +53,14 @@ def predict_images():
                         keras_input.append(cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], KERAS_IMG_SIZE, interpolation=cv2.INTER_CUBIC))
                         iterator = iterator + 1
 
-                        if remaining >= iterator_max:
-                            if iterator == iterator_max:
-                                y_pred = model.predict_on_batch(np.array(keras_input))
-                                y = np.concatenate(y_pred, axis = 0)
-                                predictions = np.concatenate((predictions, y), axis = 0)
-                                keras_input = []
-                                remaining = remaining - iterator
-                                iterator = 0
-                                print("REMAINING: %d" % remaining)
-                        else:
-                            if iterator == remaining:
-                                y_pred = model.predict_on_batch(np.array(keras_input))
-                                y = np.concatenate(y_pred, axis = 0)
-                                predictions = np.concatenate((predictions, y), axis = 0)
-                                keras_input = []
-                                remaining = remaining - iterator
-                                iterator = 0
-                                print("REMAINING: %d" % remaining)
+                        if iterator == min(remaining, iterator_max):
+                            y_pred = model.predict_on_batch(np.array(keras_input))
+                            y = np.concatenate(y_pred, axis=0)
+                            predictions = np.concatenate((predictions, y), axis=0)
+                            keras_input = []
+                            remaining = remaining - iterator
+                            iterator = 0
+                            print("REMAINING: %d" % remaining)
                         
         argmax = np.argmax(predictions)
         our_box = boxes[argmax]
@@ -83,8 +68,7 @@ def predict_images():
         our_box = [int(our_box[0]*x_ratio), int(our_box[1]*x_ratio), int(our_box[2]*y_ratio), int(our_box[3]*y_ratio)]
 
         cv2.rectangle(sample_image1, (our_box[0], our_box[2]), (our_box[1], our_box[3]), (255,0,0), 2)
-        cv2.imwrite(PREDICTED_PATH + '/' + image, sample_image1) 
+        cv2.imwrite(PREDICTED_PATH + '/' + image, sample_image1)
         print("NEXT DONE")
-
 
     print("Predicted!")
