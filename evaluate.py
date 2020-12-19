@@ -1,7 +1,5 @@
 import os
-import random
 import numpy as np
-from csv import reader
 
 from useful_functions import cut_on_edges, NMS
 from constants import TO_PREDICT_PATH, PREDICTED_PATH, UNIFORM_IMG_SIZE, FIRST_ANCHOR_X, FIRST_ANCHOR_Y, \
@@ -54,21 +52,20 @@ def predict_images():
                         boxes.append(box)
 
                         keras_input.append(cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], KERAS_IMG_SIZE, interpolation=cv2.INTER_CUBIC))
-                        iterator = iterator + 1
+                        iterator += 1
 
                         if iterator == min(remaining, iterator_max):
-                            if iterator == iterator_max:
-                                y_pred = model.predict_on_batch(np.array(keras_input))
-                                for pred in y_pred:
-                                    if np.argmax(pred) == 1:
-                                        if pred[1] >= 0.9:
-                                            Drones.append(boxes[k])
-                                            Drones_marks.append(pred[1])
-                                    k = k + 1
-                                keras_input = []
-                                remaining = remaining - iterator
-                                iterator = 0
-                                print("REMAINING: %d" % remaining)
+                            y_pred = model.predict_on_batch(np.array(keras_input))
+                            for pred in y_pred:
+                                if np.argmax(pred) == 1:
+                                    if pred[1] >= 0.9:
+                                        Drones.append(boxes[k])
+                                        Drones_marks.append(pred[1])
+                                k = k + 1
+                            keras_input = []
+                            remaining -= iterator
+                            iterator = 0
+                            print("REMAINING: %d" % remaining)
 
         # argmax = np.argmax(predictions)
         # liczba = -100
