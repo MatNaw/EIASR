@@ -18,7 +18,7 @@ def predict_images():
 
     for image in pred_list:
         sample_image1 = cv2.imread(TO_PREDICT_PATH + '/' + image)
-        sample_image = sample_image1.astype(np.float32)/255.0
+        sample_image = sample_image1.astype(np.float32) / 255.0
         (y_sample_shape, x_sample_shape, _) = sample_image.shape
         sample_image_resized = cv2.resize(sample_image, UNIFORM_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
         x_ratio = x_sample_shape / x_resized

@@ -32,7 +32,7 @@ def get_labels():
     return labels_list
 
 
-def build_model():
+def build_model(is_trainable=False):
     # MODEL BUILDING BEGIN
     # FEATURE EXTRACTION LAYERS - TRANSFER LEARNING
 
@@ -46,7 +46,8 @@ def build_model():
         weights=FEATURE_WEIGHTS_PATH,
         input_shape=keras_input_shape
     )
-    base_model.trainable = False
+    # is_trainable = False => freeze the weights of base model
+    base_model.trainable = is_trainable
 
     # OUR SEGMENT OF NETWORK - TRAINABLE
     x = base_model(keras_input, training=False)
@@ -57,7 +58,21 @@ def build_model():
     return base_model, model
 
 
-def train_network():
+def compile_model_and_train(model, lr, labels, val_imgs, val_labels):
+    model.compile(loss='binary_crossentropy', optimizer=optimizers.RMSprop(lr=lr), metrics=['acc'])
+    for epoch in range(NUM_EPOCHS):
+        print("\n\nEPOCH: ", epoch)
+        dataset = create_batch_list(labels, positive_box_threshold=0.7, negative_box_threshold=0.3)
+
+        error_train = []
+        for (x, y) in dataset:
+            error_train = model.train_on_batch(np.array(x), np.array(y))
+        error_val = model.test_on_batch(np.array(val_imgs), np.array(val_labels))
+        print("Train error: %lf, Accuracy: %lf" % (error_train[0], error_train[1]))
+        print("Validation Error: %lf, Accuracy: %lf" % (error_val[0], error_val[1]))
+
+
+def train_network(fine_tuning=False):
     labels = get_labels()
 
     base_model, model = build_model()
@@ -73,18 +88,28 @@ def train_network():
     val_imgs, val_labels = create_test_data(labels, positive_box_threshold=0.7, negative_box_threshold=0.3)
     print("Validation data loaded!")
     print("Number of validation samples: ", (len(val_labels)))
-    
-    model.compile(loss='binary_crossentropy', optimizer=optimizers.RMSprop(lr=1e-4), metrics=['acc'])
-    for epoch in range(NUM_EPOCHS):
-        print("\n\nEPOCH: ", epoch)
-        dataset = create_batch_list(labels, positive_box_threshold=0.7, negative_box_threshold=0.3)
 
-        error_train = []
-        for (x, y) in dataset:
-            error_train = model.train_on_batch(np.array(x), np.array(y))
-        error_val = model.test_on_batch(np.array(val_imgs), np.array(val_labels))
-        print("Train error: %lf, Accuracy: %lf" % (error_train[0], error_train[1]))
-        print("Validation Error: %lf, Accuracy: %lf" % (error_val[0], error_val[1]))
+    compile_model_and_train(model, 1e-4, labels, val_imgs, val_labels)
 
+    # model.compile(loss='binary_crossentropy', optimizer=optimizers.RMSprop(lr=1e-4), metrics=['acc'])
+    # for epoch in range(NUM_EPOCHS):
+    #     print("\n\nEPOCH: ", epoch)
+    #     dataset = create_batch_list(labels, positive_box_threshold=0.7, negative_box_threshold=0.3)
+    #
+    #     error_train = []
+    #     for (x, y) in dataset:
+    #         error_train = model.train_on_batch(np.array(x), np.array(y))
+    #     error_val = model.test_on_batch(np.array(val_imgs), np.array(val_labels))
+    #     print("Train error: %lf, Accuracy: %lf" % (error_train[0], error_train[1]))
+    #     print("Validation Error: %lf, Accuracy: %lf" % (error_val[0], error_val[1]))
+
+    if fine_tuning:
+        print("FINE TUNING")
+        base_model.trainable = True
+        compile_model_and_train(model, 1e-5, labels, val_imgs, val_labels)
+
+        # set layers 'trainable' parameter to false before saving the model (needed only if 'fine_tuning' is true)
+        for layer in model.layers:
+            layer.trainable = False
     model.save(MODEL_PATH)
-    print('Training done!')
+    print("Training done!")
