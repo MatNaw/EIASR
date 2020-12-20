@@ -29,7 +29,7 @@ def calculate_IoU(box1, box2):
     try:
         return intersection_area / union_area
     except ZeroDivisionError:
-        print('IoU calculation - union area is equal to 0!')
+        print("IoU calculation error - union area is equal to 0!")
         return 0
 
 
@@ -96,7 +96,7 @@ def create_batch(labels, positive_box_threshold=0.7, negative_box_threshold=0.3)
         x_ratio = x_sample_shape / x_resized
         y_ratio = y_sample_shape / y_resized
 
-        # getting real_boxes from image' labels
+        # getting real_boxes from image labels
         real_boxes_resized = []
         for label in labels:
             if label[0] == sample_name:
@@ -114,24 +114,32 @@ def create_batch(labels, positive_box_threshold=0.7, negative_box_threshold=0.3)
         # creating a batch
         if 2 * len(positive_boxes) <= (BATCH_SIZE - len(batch_images)):
             for box in positive_boxes:
-                resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], KERAS_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
+                resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3],
+                                              KERAS_IMG_SIZE,
+                                              interpolation=cv2.INTER_CUBIC)
                 batch_images.append(resize_for_keras)
                 batch_labels.append([0.0, 1.0])
             negative_boxes = random.sample(negative_boxes,
                                            len(positive_boxes))  # same amount of negative and positive from an image
             for box in negative_boxes:
-                resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], KERAS_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
+                resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3],
+                                              KERAS_IMG_SIZE,
+                                              interpolation=cv2.INTER_CUBIC)
                 batch_images.append(resize_for_keras)
                 batch_labels.append([1.0, 0.0])
         else:
             positive_boxes = random.sample(positive_boxes, k=int((BATCH_SIZE - len(batch_images)) / 2))
             negative_boxes = random.sample(negative_boxes, k=int((BATCH_SIZE - len(batch_images)) / 2)) # same amount of negative and positive from an image
             for box in positive_boxes:
-                resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], KERAS_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
+                resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3],
+                                              KERAS_IMG_SIZE,
+                                              interpolation=cv2.INTER_CUBIC)
                 batch_images.append(resize_for_keras)
                 batch_labels.append([0.0, 1.0])
             for box in negative_boxes:
-                resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], KERAS_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
+                resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3],
+                                              KERAS_IMG_SIZE,
+                                              interpolation=cv2.INTER_CUBIC)
                 batch_images.append(resize_for_keras)
                 batch_labels.append([1.0, 0.0])
 
@@ -142,7 +150,9 @@ def create_batch_list(labels, positive_box_threshold=0.7, negative_box_threshold
     dataset = []
 
     for step in range(EPOCH_LENGTH):
-        batch_images, batch_labels = create_batch(labels, positive_box_threshold=positive_box_threshold)
+        batch_images, batch_labels = create_batch(labels,
+                                                  positive_box_threshold=positive_box_threshold,
+                                                  negative_box_threshold=negative_box_threshold)
         dataset.append((batch_images, batch_labels))
 
     return dataset
@@ -180,14 +190,18 @@ def create_test_data(labels, positive_box_threshold=0.7, negative_box_threshold=
 
         if len(positive_boxes) == 0:
             continue
-        box = random.choice(positive_boxes)
 
-        resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], KERAS_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
+        box = random.choice(positive_boxes)
+        resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3],
+                                      KERAS_IMG_SIZE,
+                                      interpolation=cv2.INTER_CUBIC)
         test_images.append(resize_for_keras)
         test_labels.append([0.0, 1.0])
 
         box = random.choice(negative_boxes)
-        resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], KERAS_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
+        resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3],
+                                      KERAS_IMG_SIZE,
+                                      interpolation=cv2.INTER_CUBIC)
         test_images.append(resize_for_keras)
         test_labels.append([1.0, 0.0])
 

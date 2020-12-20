@@ -37,7 +37,7 @@ def build_model():
     # FEATURE EXTRACTION LAYERS - TRANSFER LEARNING
 
     # input shape
-    keras_input_shape =(BOX_SIZES[2], BOX_SIZES[2], 3)
+    keras_input_shape = (BOX_SIZES[2], BOX_SIZES[2], 3)
 
     keras_input = Input(shape=keras_input_shape)
 
@@ -69,16 +69,17 @@ def train_network():
     #print(y)
 
     #x, y = create_batch(BATCH_SIZE, train_list, labels, BOX_SIZES, BOX_SCALES, positive_box_threshold=0.4)
-    print("Loading val data")
+    print("Loading validation data")
     val_imgs, val_labels = create_test_data(labels, positive_box_threshold=0.7, negative_box_threshold=0.3)
-    print("val data loaded!")
-    print("NUM val samples: %d" % (len(val_labels)))
+    print("Validation data loaded!")
+    print("Number of validation samples: ", (len(val_labels)))
     
     model.compile(loss='binary_crossentropy', optimizer=optimizers.RMSprop(lr=1e-4), metrics=['acc'])
     for epoch in range(NUM_EPOCHS):
-        print("\n\n\nEPOCH: %d" % epoch)
+        print("\n\nEPOCH: ", epoch)
         dataset = create_batch_list(labels, positive_box_threshold=0.7, negative_box_threshold=0.3)
 
+        error_train = []
         for (x, y) in dataset:
             error_train = model.train_on_batch(np.array(x), np.array(y))
         error_val = model.test_on_batch(np.array(val_imgs), np.array(val_labels))
