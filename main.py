@@ -1,17 +1,16 @@
 import argparse
-import os
 
-from constants import MODEL_PATH
 from train import train_network
 from evaluate import predict_images
 
 if __name__ == '__main__':
     # tf.enable_eager_execution()
     parser = argparse.ArgumentParser()
-    parser.add_argument("--train", type=int, default=0, choices=[0, 1],
-                        help="Specify if the new model should be trained and saved as './model.h5' (0 - no, 1 - yes")
+    parser.add_argument("--action", type=str, default="predict", choices=["train", "predict"],
+                        help="Specify the action to be performed ('train', 'predict'); default action: predict")
     args = parser.parse_args()
 
-    if not os.path.exists(MODEL_PATH) or args.train == 1:
+    if args.action == "train":
         train_network()
-    predict_images()
+    else:  # 'predict' is a default action
+        predict_images()
