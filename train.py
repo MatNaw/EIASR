@@ -91,18 +91,6 @@ def train_network(fine_tuning=False):
 
     compile_model_and_train(model, 1e-4, labels, val_imgs, val_labels)
 
-    # model.compile(loss='binary_crossentropy', optimizer=optimizers.RMSprop(lr=1e-4), metrics=['acc'])
-    # for epoch in range(NUM_EPOCHS):
-    #     print("\n\nEPOCH: ", epoch)
-    #     dataset = create_batch_list(labels, positive_box_threshold=0.7, negative_box_threshold=0.3)
-    #
-    #     error_train = []
-    #     for (x, y) in dataset:
-    #         error_train = model.train_on_batch(np.array(x), np.array(y))
-    #     error_val = model.test_on_batch(np.array(val_imgs), np.array(val_labels))
-    #     print("Train error: %lf, Accuracy: %lf" % (error_train[0], error_train[1]))
-    #     print("Validation Error: %lf, Accuracy: %lf" % (error_val[0], error_val[1]))
-
     if fine_tuning:
         print("FINE TUNING")
         base_model.trainable = True
