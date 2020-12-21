@@ -218,7 +218,7 @@ def cut_on_edges(img_shape, box):
     return [xmin, xmax, ymin, ymax]
 
 
-def NMS(box_list, labels, IoU_threshold = 0.3):
+def NMS(box_list, labels, IoU_threshold=0.3):
     filtered_list = []
     while len(box_list) > 0:
         k = np.argmax(labels)

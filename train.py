@@ -1,19 +1,14 @@
-import os
-import random
 from csv import reader
 
-import cv2
-import matplotlib.pyplot as plt
 import numpy as np
-import tensorflow as tf
-from matplotlib import patches
 from tensorflow import keras
 from tensorflow.keras.applications.xception import Xception
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Input
 from tensorflow.keras.models import Model
 from tensorflow.keras import optimizers
 
-from constants import BOX_SIZES, FEATURE_WEIGHTS_PATH, LABEL_PATH, TRAIN_PATH, NUM_EPOCHS, MODEL_PATH
+from constants import BOX_SIZES, FEATURE_WEIGHTS_PATH, LABEL_PATH, NUM_EPOCHS, MODEL_PATH, \
+    POSITIVE_BOX_THRESHOLD, NEGATIVE_BOX_THRESHOLD, LR, LR_FINE_TUNING
 from useful_functions import create_batch_list, create_test_data
 
 
@@ -32,7 +27,7 @@ def get_labels():
     return labels_list
 
 
-def build_model(is_trainable=False):
+def build_model():
     # MODEL BUILDING BEGIN
     # FEATURE EXTRACTION LAYERS - TRANSFER LEARNING
 
@@ -47,7 +42,7 @@ def build_model(is_trainable=False):
         input_shape=keras_input_shape
     )
     # is_trainable = False => freeze the weights of base model
-    base_model.trainable = is_trainable
+    base_model.trainable = False
 
     # OUR SEGMENT OF NETWORK - TRAINABLE
     x = base_model(keras_input, training=False)
@@ -62,7 +57,9 @@ def compile_model_and_train(model, lr, labels, val_imgs, val_labels):
     model.compile(loss='binary_crossentropy', optimizer=optimizers.RMSprop(lr=lr), metrics=['acc'])
     for epoch in range(NUM_EPOCHS):
         print("\n\nEPOCH: ", epoch)
-        dataset = create_batch_list(labels, positive_box_threshold=0.7, negative_box_threshold=0.3)
+        dataset = create_batch_list(labels,
+                                    positive_box_threshold=POSITIVE_BOX_THRESHOLD,
+                                    negative_box_threshold=NEGATIVE_BOX_THRESHOLD)
 
         error_train = []
         for (x, y) in dataset:
@@ -85,19 +82,22 @@ def train_network(fine_tuning=False):
 
     #x, y = create_batch(BATCH_SIZE, train_list, labels, BOX_SIZES, BOX_SCALES, positive_box_threshold=0.4)
     print("Loading validation data")
-    val_imgs, val_labels = create_test_data(labels, positive_box_threshold=0.7, negative_box_threshold=0.3)
+    val_imgs, val_labels = create_test_data(labels,
+                                            positive_box_threshold=POSITIVE_BOX_THRESHOLD,
+                                            negative_box_threshold=NEGATIVE_BOX_THRESHOLD)
     print("Validation data loaded!")
     print("Number of validation samples: ", (len(val_labels)))
 
-    compile_model_and_train(model, 1e-4, labels, val_imgs, val_labels)
+    compile_model_and_train(model, LR, labels, val_imgs, val_labels)
 
     if fine_tuning:
-        print("FINE TUNING")
+        print("Applying fine tuning...")
         base_model.trainable = True
-        compile_model_and_train(model, 1e-5, labels, val_imgs, val_labels)
+        compile_model_and_train(model, LR_FINE_TUNING, labels, val_imgs, val_labels)
 
         # set layers 'trainable' parameter to false before saving the model (needed only if 'fine_tuning' is true)
         for layer in model.layers:
             layer.trainable = False
+
     model.save(MODEL_PATH)
     print("Training done!")

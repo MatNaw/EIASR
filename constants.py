@@ -1,6 +1,6 @@
 from math import sqrt
 
-# PROGRAM CONSTANTS
+# PROGRAM CONSTANTS #
 
 # paths
 TRAIN_PATH = './train_images'
@@ -29,3 +29,11 @@ ANCHOR_STEP_Y = 25
 BATCH_SIZE = 32
 NUM_EPOCHS = 15
 EPOCH_LENGTH = 50
+
+POSITIVE_BOX_THRESHOLD = 0.7
+NEGATIVE_BOX_THRESHOLD = 0.3
+
+LR = 1e-4  # optimizer learning rate
+LR_FINE_TUNING = 1e-5  # optimizer learning rate (fine tuning)
+
+IoU_THRESHOLD = 0.1

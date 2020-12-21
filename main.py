@@ -14,5 +14,5 @@ if __name__ == '__main__':
         train_network()
     elif args.action == "fine_tuning":
         train_network(fine_tuning=True)
-    else:  # 'predict' is a default action
+    else:  # 'predict' is the default action
         predict_images()

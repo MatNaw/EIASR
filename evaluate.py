@@ -3,7 +3,7 @@ import numpy as np
 
 from useful_functions import cut_on_edges, NMS
 from constants import TO_PREDICT_PATH, PREDICTED_PATH, UNIFORM_IMG_SIZE, FIRST_ANCHOR_X, FIRST_ANCHOR_Y, \
-    ANCHOR_STEP_X, ANCHOR_STEP_Y, BOX_SIZES, BOX_SCALES, KERAS_IMG_SIZE, MODEL_PATH
+    ANCHOR_STEP_X, ANCHOR_STEP_Y, BOX_SIZES, BOX_SCALES, KERAS_IMG_SIZE, MODEL_PATH, IoU_THRESHOLD
 from train import build_model
 import cv2
 
@@ -27,8 +27,8 @@ def predict_images():
         anchors_along_x = int((x_resized - FIRST_ANCHOR_X) / ANCHOR_STEP_X) + 1  # On scaled image
         anchors_along_y = int((y_resized - FIRST_ANCHOR_Y) / ANCHOR_STEP_Y) + 1  
 
-        Drones = []
-        Drones_marks = []
+        drones = []
+        drones_marks = []
 
         boxes = []
         predictions = []
@@ -62,8 +62,8 @@ def predict_images():
                             for pred in y_pred:
                                 if np.argmax(pred) == 1:
                                     if pred[1] >= 0.9:
-                                        Drones.append(boxes[k])
-                                        Drones_marks.append(pred[1])
+                                        drones.append(boxes[k])
+                                        drones_marks.append(pred[1])
                                 k = k + 1
                             keras_input = []
                             remaining_anchors -= iterator
@@ -73,9 +73,9 @@ def predict_images():
         # argmax = np.argmax(predictions)
         # liczba = -100
         # l=0
-        Drones = NMS(Drones, Drones_marks, IoU_threshold=0.1)
+        drones = NMS(drones, drones_marks, IoU_threshold=IoU_THRESHOLD)
 
-        for drone in Drones:
+        for drone in drones:
             drone = [int(drone[0]*x_ratio), int(drone[1]*x_ratio), int(drone[2]*y_ratio), int(drone[3]*y_ratio)]
             cv2.rectangle(sample_image1, (drone[0], drone[2]), (drone[1], drone[3]), (255, 0, 0), 2)
         # our_box = boxes[argmax]
@@ -83,7 +83,7 @@ def predict_images():
 
         # cv2.rectangle(sample_image1, (our_box[0], our_box[2]), (our_box[1], our_box[3]), (255,0,0), 2)
         cv2.imwrite(PREDICTED_PATH + '/' + image, sample_image1)
-        print(len(Drones))
+        print(len(drones))
         print("Next image...")
 
     print("All images predicted!")
