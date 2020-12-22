@@ -1,13 +1,11 @@
+import os
+
 import cv2
 import random
 import numpy as np
 
-from constants import TRAIN_PATH, UNIFORM_IMG_SIZE, EPOCH_LENGTH, BATCH_SIZE, BOX_SIZES, BOX_SCALES, KERAS_IMG_SIZE
-
-FIRST_ANCHOR_X = 5  # pixels
-FIRST_ANCHOR_Y = 5  # pixels
-ANCHOR_STEP_X = 5
-ANCHOR_STEP_Y = 5
+from constants import TRAIN_PATH, UNIFORM_IMG_SIZE, EPOCH_LENGTH, BATCH_SIZE, BOX_SIZES, BOX_SCALES, KERAS_IMG_SIZE, \
+    FIRST_ANCHOR_X, ANCHOR_STEP_X, ANCHOR_STEP_Y, FIRST_ANCHOR_Y, VAL_PATH
 
 
 def calculate_IoU(box1, box2):
@@ -31,7 +29,7 @@ def calculate_IoU(box1, box2):
     try:
         return intersection_area / union_area
     except ZeroDivisionError:
-        print('IoU calculation - union area is equal to 0!')
+        print("IoU calculation error - union area is equal to 0!")
         return 0
 
 
@@ -53,7 +51,7 @@ def get_box(anchor_x, anchor_y, box_width, box_height, img_shape):
 
 
 # return positive and negative boxes, marking them respectively to positive_box_threshold
-def mark_boxes(x_resized, y_resized, box_sizes, box_scales, real_boxes_resized, positive_box_threshold):
+def mark_boxes(x_resized, y_resized, real_boxes_resized, positive_box_threshold, negative_box_threshold):
     anchors_along_x = round((x_resized - FIRST_ANCHOR_X) / ANCHOR_STEP_X) + 1  # On scaled image
     anchors_along_y = round((y_resized - FIRST_ANCHOR_Y) / ANCHOR_STEP_Y) + 1  # On scaled image
 
@@ -62,41 +60,43 @@ def mark_boxes(x_resized, y_resized, box_sizes, box_scales, real_boxes_resized, 
 
     for i in range(anchors_along_x):
         for j in range(anchors_along_y):
-            for boxSize in box_sizes:
-                for boxScale in box_scales:
+            for boxSize in BOX_SIZES:
+                for boxScale in BOX_SCALES:
                     IoU_values = []  # important for multiple drones in one image
                     width = round(boxSize * boxScale)
                     height = round(boxSize / boxScale)
                     anchor_x = FIRST_ANCHOR_X + i * ANCHOR_STEP_X
                     anchor_y = FIRST_ANCHOR_Y + j * ANCHOR_STEP_Y
                     (x_min, x_max, y_min, y_max) = get_box(anchor_x, anchor_y, width, height, (y_resized, x_resized, 3))
+
                     for realBoxR in real_boxes_resized:
                         current_IoU = calculate_IoU([x_min, x_max, y_min, y_max], realBoxR)
                         IoU_values.append(current_IoU)
+
                     if max(IoU_values) >= positive_box_threshold:
                         positive_boxes.append([x_min, x_max, y_min, y_max])
-                    else:
+                    elif max(IoU_values) <= negative_box_threshold:
                         negative_boxes.append([x_min, x_max, y_min, y_max])
     return positive_boxes, negative_boxes
 
 
-# JESZCZE NIE DZIALA POPRAWNIE
-def create_batch(batch_size, train_list, labels, box_sizes, box_scales,
-                 positive_box_threshold=0.4):
+def create_batch(labels, positive_box_threshold=0.7, negative_box_threshold=0.3):
+    train_list = os.listdir(TRAIN_PATH)
+
     batch_images = []
     batch_labels = []
     x_resized = UNIFORM_IMG_SIZE[0]
     y_resized = UNIFORM_IMG_SIZE[1]
 
-    while len(batch_images) < batch_size:
+    while len(batch_images) < BATCH_SIZE:
         sample_name = random.choice(train_list)
-        sample_image = cv2.imread(TRAIN_PATH + '/' + sample_name).astype(np.float32)/255.0
+        sample_image = cv2.imread(TRAIN_PATH + '/' + sample_name).astype(np.float32) / 255.0
         (y_sample_shape, x_sample_shape, _) = sample_image.shape
         sample_image_resized = cv2.resize(sample_image, UNIFORM_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
         x_ratio = x_sample_shape / x_resized
         y_ratio = y_sample_shape / y_resized
 
-        # getting real_boxes from image' labels
+        # getting real_boxes from image labels
         real_boxes_resized = []
         for label in labels:
             if label[0] == sample_name:
@@ -108,63 +108,68 @@ def create_batch(batch_size, train_list, labels, box_sizes, box_scales,
                 ])
 
         # marked boxes
-        positive_boxes, negative_boxes = mark_boxes(x_resized, y_resized, box_sizes, box_scales, real_boxes_resized,
-                                                    positive_box_threshold)
+        positive_boxes, negative_boxes = mark_boxes(x_resized, y_resized, real_boxes_resized,
+                                                    positive_box_threshold, negative_box_threshold)
 
         # creating a batch
-        if 2 * len(positive_boxes) <= (batch_size - len(batch_images)):
+        if 2 * len(positive_boxes) <= (BATCH_SIZE - len(batch_images)):
             for box in positive_boxes:
-                resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], KERAS_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
+                resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3],
+                                              KERAS_IMG_SIZE,
+                                              interpolation=cv2.INTER_CUBIC)
                 batch_images.append(resize_for_keras)
-                batch_labels.append(1.0)
+                batch_labels.append([0.0, 1.0])
             negative_boxes = random.sample(negative_boxes,
                                            len(positive_boxes))  # same amount of negative and positive from an image
             for box in negative_boxes:
-                resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], KERAS_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
+                resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3],
+                                              KERAS_IMG_SIZE,
+                                              interpolation=cv2.INTER_CUBIC)
                 batch_images.append(resize_for_keras)
-                batch_labels.append(0.0)
+                batch_labels.append([1.0, 0.0])
         else:
-            positive_boxes = random.sample(positive_boxes, k = int((batch_size - len(batch_images)) / 2))
-            negative_boxes = random.sample(negative_boxes, k = int((batch_size - len(batch_images)) / 2))  # same amount of negative and positive from an image
+            positive_boxes = random.sample(positive_boxes, k=int((BATCH_SIZE - len(batch_images)) / 2))
+            negative_boxes = random.sample(negative_boxes, k=int((BATCH_SIZE - len(batch_images)) / 2)) # same amount of negative and positive from an image
             for box in positive_boxes:
-                resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], KERAS_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
+                resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3],
+                                              KERAS_IMG_SIZE,
+                                              interpolation=cv2.INTER_CUBIC)
                 batch_images.append(resize_for_keras)
-                batch_labels.append(1.0)
+                batch_labels.append([0.0, 1.0])
             for box in negative_boxes:
-                resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], KERAS_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
+                resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3],
+                                              KERAS_IMG_SIZE,
+                                              interpolation=cv2.INTER_CUBIC)
                 batch_images.append(resize_for_keras)
-                batch_labels.append(0.0)
+                batch_labels.append([1.0, 0.0])
 
     return batch_images, batch_labels
 
-def create_batch_list(train_list, labels, positive_box_threshold=0.4):
 
-    dataset=[]
+def create_batch_list(labels, positive_box_threshold=0.7, negative_box_threshold=0.3):
+    dataset = []
 
     for step in range(EPOCH_LENGTH):
-        batch_images, batch_labels = create_batch(BATCH_SIZE, train_list, labels, BOX_SIZES, BOX_SCALES, positive_box_threshold=positive_box_threshold)
-
-        dataset.append((batch_images,batch_labels))
+        batch_images, batch_labels = create_batch(labels,
+                                                  positive_box_threshold=positive_box_threshold,
+                                                  negative_box_threshold=negative_box_threshold)
+        dataset.append((batch_images, batch_labels))
 
     return dataset
 
 
-
-def create_test_data(test_list, labels, path, positive_box_threshold=0.4, batch_size=100):
+def create_test_data(labels, positive_box_threshold=0.7, negative_box_threshold=0.3, batch_size=100):
     test_images = []
     test_labels = []
+
+    test_list = os.listdir(VAL_PATH)
 
     x_resized = UNIFORM_IMG_SIZE[0]
     y_resized = UNIFORM_IMG_SIZE[1]
 
-    i = 0
-    i_max = 150
-
-
     while len(test_labels) < batch_size:
-
         sample_name = random.choice(test_list)
-        sample_image = cv2.imread(path + '/' + sample_name).astype(np.float32)/255.0
+        sample_image = cv2.imread(VAL_PATH + '/' + sample_name).astype(np.float32) / 255.0
         (y_sample_shape, x_sample_shape, _) = sample_image.shape
         sample_image_resized = cv2.resize(sample_image, UNIFORM_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
         x_ratio = x_sample_shape / x_resized
@@ -180,24 +185,27 @@ def create_test_data(test_list, labels, path, positive_box_threshold=0.4, batch_
                     round(int(label[5]) / y_ratio)
                 ])
 
-        positive_boxes, negative_boxes = mark_boxes(x_resized, y_resized, BOX_SIZES, BOX_SCALES, real_boxes_resized,
-                                                    positive_box_threshold)
+        positive_boxes, negative_boxes = mark_boxes(x_resized, y_resized, real_boxes_resized,
+                                                    positive_box_threshold, negative_box_threshold)
 
-        try:
-            box = random.choice(positive_boxes)
-        except:
+        if len(positive_boxes) == 0:
             continue
-        resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], KERAS_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
+
+        box = random.choice(positive_boxes)
+        resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3],
+                                      KERAS_IMG_SIZE,
+                                      interpolation=cv2.INTER_CUBIC)
         test_images.append(resize_for_keras)
-        test_labels.append(1.0)
+        test_labels.append([0.0, 1.0])
 
         box = random.choice(negative_boxes)
-        resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3], KERAS_IMG_SIZE, interpolation=cv2.INTER_CUBIC)
+        resize_for_keras = cv2.resize(sample_image_resized[box[2]:box[3], box[0]:box[1], 0:3],
+                                      KERAS_IMG_SIZE,
+                                      interpolation=cv2.INTER_CUBIC)
         test_images.append(resize_for_keras)
-        test_labels.append(0.0)
+        test_labels.append([1.0, 0.0])
 
     return test_images, test_labels
-
 
 
 #box = [xmin, xmax, ymin, ymax]
@@ -209,3 +217,25 @@ def cut_on_edges(img_shape, box):
 
     return [xmin, xmax, ymin, ymax]
 
+
+def NMS(box_list, labels, IoU_threshold = 0.3):
+    filtered_list = []
+    while len(box_list) > 0:
+        k = np.argmax(labels)
+        chosen = box_list[k]
+        filtered_list.append(chosen)
+        del box_list[k]
+        del labels[k]
+
+        del_list = []
+        for i in range(len(box_list)):
+            IoU = calculate_IoU(chosen, box_list[i])
+            if IoU > IoU_threshold:
+                del_list.append(i)
+        
+        s = 0
+        for deletion in del_list:
+            del box_list[deletion-s]
+            del labels[deletion-s]
+            s = s + 1
+    return filtered_list

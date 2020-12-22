@@ -1,9 +1,9 @@
 .git
 .idea
-predicted
-to_predict
 train_images
 val_images
 test_images
+predicted
+to_predict
 model.h5
 __pycache__
