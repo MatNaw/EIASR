@@ -12,5 +12,5 @@ if __name__ == '__main__':
 
     if args.action == "train":
         train_network()
-    else:  # 'predict' is a default action
-        predict_images()
+    else: 
+        predict_images()  # 'predict' is a default action
