@@ -23,6 +23,7 @@ def calculate_IoU(box1, box2):
     y_inter_left = max(box1[2], box2[2])
     x_inter_right = min(box1[1], box2[1])
     y_inter_right = min(box1[3], box2[3])
+
     intersection_area = max(0, x_inter_right - x_inter_left) * max(0, y_inter_right - y_inter_left)
     union_area = box1_area + box2_area - intersection_area
 
@@ -47,6 +48,7 @@ def get_box(anchor_x, anchor_y, box_width, box_height, img_shape):
     x_max = min(img_x, anchor_x + half_box_width)
     y_min = max(0, anchor_y - half_box_height)
     y_max = min(img_y, anchor_y + half_box_height)
+
     return x_min, x_max, y_min, y_max
 
 
