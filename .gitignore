@@ -5,5 +5,5 @@ val_images
 test_images
 predicted
 to_predict
-model.h5
+*model*
 __pycache__

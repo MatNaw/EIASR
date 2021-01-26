@@ -9,7 +9,8 @@ LABEL_PATH = './labels.csv'
 TO_PREDICT_PATH = './to_predict'
 PREDICTED_PATH = './predicted'
 FEATURE_WEIGHTS_PATH = './xception_weights_tf_dim_ordering_tf_kernels_notop.h5'
-MODEL_PATH = './model.h5'
+CLASS_MODEL_PATH = './classifier_model.h5'
+REGRESSOR_MODEL_PATH = './regressor_model.h5'
 
 # uniform image size
 UNIFORM_IMG_SIZE = (400, 400)

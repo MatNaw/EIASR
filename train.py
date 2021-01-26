@@ -1,19 +1,12 @@
-import os
-import random
 from csv import reader
 
-import cv2
-import matplotlib.pyplot as plt
 import numpy as np
-import tensorflow as tf
-from matplotlib import patches
-from tensorflow import keras
 from tensorflow.keras.applications.xception import Xception
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Input
 from tensorflow.keras.models import Model
 from tensorflow.keras import optimizers
 
-from constants import BOX_SIZES, FEATURE_WEIGHTS_PATH, LABEL_PATH, TRAIN_PATH, NUM_EPOCHS, MODEL_PATH
+from constants import BOX_SIZES, FEATURE_WEIGHTS_PATH, LABEL_PATH, NUM_EPOCHS, CLASS_MODEL_PATH, REGRESSOR_MODEL_PATH
 from useful_functions import create_batch_list, create_test_data
 
 
@@ -32,13 +25,12 @@ def get_labels():
     return labels_list
 
 
-def build_model():
+def build_models():
     # MODEL BUILDING BEGIN
     # FEATURE EXTRACTION LAYERS - TRANSFER LEARNING
 
     # input shape
     keras_input_shape = (BOX_SIZES[2], BOX_SIZES[2], 3)
-
     keras_input = Input(shape=keras_input_shape)
 
     base_model = Xception(
@@ -48,47 +40,51 @@ def build_model():
     )
     base_model.trainable = False
 
-    # OUR SEGMENT OF NETWORK - TRAINABLE
+    # Classifier
     x = base_model(keras_input, training=False)
     x = GlobalAveragePooling2D()(x)
-    output = Dense(2, activation='softmax')(x)
-    model = Model(keras_input, output)
+    classifier_output = Dense(2, activation='softmax')(x)
+    classifier = Model(keras_input, classifier_output)
 
-    return base_model, model
+    # Regressor
+    regressor_output = Dense(4, activation='relu')(x)
+    regressor = Model(keras_input, regressor_output)
+
+    return base_model, classifier, regressor
 
 
-def compile_model_and_train(model, lr, labels, val_imgs, val_labels):
-    model.compile(loss='binary_crossentropy', optimizer=optimizers.RMSprop(lr=lr), metrics=['acc'])
+def compile_model_and_train(classifier, regressor, lr, labels, val_classifier_imgs, val_regressor_imgs, val_labels, val_boxes):
+    classifier.compile(loss='binary_crossentropy', optimizer=optimizers.RMSprop(lr=lr), metrics=['acc'])
+    regressor.compile(loss='mean_squared_error', optimizer=optimizers.RMSprop(lr=lr), metrics=['acc'])
     for epoch in range(NUM_EPOCHS):
         print("\n\nEPOCH: ", epoch)
         dataset = create_batch_list(labels, positive_box_threshold=0.7, negative_box_threshold=0.3)
 
-        error_train = []
-        for (x, y) in dataset:
-            error_train = model.train_on_batch(np.array(x), np.array(y))
-        error_val = model.test_on_batch(np.array(val_imgs), np.array(val_labels))
-        print("Train error: %lf, Accuracy: %lf" % (error_train[0], error_train[1]))
-        print("Validation Error: %lf, Accuracy: %lf" % (error_val[0], error_val[1]))
+        error_train_classifier = []
+        error_train_regressor = []
+        for (classifier_images, regressor_images, classes, boxes) in dataset:
+            error_train_classifier = classifier.train_on_batch(np.array(classifier_images), np.array(classes))
+            error_train_regressor = regressor.train_on_batch(np.array(regressor_images), np.array(boxes))
+        error_val_classifier = classifier.test_on_batch(np.array(val_classifier_imgs), np.array(val_labels))
+        error_val_regressor = regressor.test_on_batch(np.array(val_regressor_imgs), np.array(val_boxes))
+
+        print("Classifier train error: %lf, Accuracy: %lf" % (error_train_classifier[0], error_train_classifier[1]))
+        print("Classifier validation error: %lf, Accuracy: %lf" % (error_val_classifier[0], error_val_classifier[1]))
+        print("Regressor train error: %lf, Accuracy: %lf" % (error_train_regressor[0], error_train_regressor[1]))
+        print("Regressor validation error: %lf, Accuracy: %lf" % (error_val_regressor[0], error_val_regressor[1]))
 
 
 def train_network():
     labels = get_labels()
+    base_model, classifier, regressor = build_models()
 
-    base_model, model = build_model()
-    loss_fn = keras.losses.BinaryCrossentropy()
-    optimizer = keras.optimizers.Adam()
-
-    #dataset = create_batch_list(train_list, labels, positive_box_threshold=0.4)
-    #(x, y) = dataset[5]
-    #print(y)
-
-    #x, y = create_batch(BATCH_SIZE, train_list, labels, BOX_SIZES, BOX_SCALES, positive_box_threshold=0.4)
     print("Loading validation data")
-    val_imgs, val_labels = create_test_data(labels, positive_box_threshold=0.7, negative_box_threshold=0.3)
+    val_classifier_imgs, val_regressor_imgs, val_labels, val_boxes = create_test_data(labels, positive_box_threshold=0.7, negative_box_threshold=0.3)
     print("Validation data loaded!")
     print("Number of validation samples: ", (len(val_labels)))
 
-    compile_model_and_train(model, 1e-4, labels, val_imgs, val_labels)
+    compile_model_and_train(classifier, regressor, 1e-4, labels, val_classifier_imgs, val_regressor_imgs, val_labels, val_boxes)
 
-    model.save(MODEL_PATH)
+    classifier.save(CLASS_MODEL_PATH)
+    regressor.save(REGRESSOR_MODEL_PATH)
     print('Training done!')
