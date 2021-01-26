@@ -71,10 +71,10 @@ def predict_images():
 
                             for pred in classifier_pred:
                                 if np.argmax(pred) == 1:
-                                    if pred[1] >= 0.9:
+                                    if pred[1] >= 0.90:
                                         [box_x_min, _, box_y_min, _] = boxes[k]
                                         [reg_box_x_min, reg_box_x_max, reg_box_y_min, reg_box_y_max] = \
-                                            regressor_pred[k] * int(UNIFORM_IMG_SIZE[0] / KERAS_IMG_SIZE[0])
+                                            regressor_pred[k] * UNIFORM_IMG_SIZE[0]
 
                                         reg_box_x_min += box_x_min
                                         reg_box_x_max += box_x_min
@@ -90,15 +90,24 @@ def predict_images():
                             iterator = 0
                             print("Remaining anchors to iterate: ", remaining_anchors)
 
-        Drones = NMS(Drones, Drones_marks, IoU_threshold=0.1)
+        Drones = NMS(Drones, Drones_marks, IoU_threshold=0.15)
+        # keras_input=[]
+        # for box in Drones:
+        #      keras_input.append(cv2.resize(sample_image_resized[int(box[2]):int(box[3]), int(box[0]):int(box[1]), 0:3],
+        #                                               KERAS_IMG_SIZE,
+        #                                               interpolation=cv2.INTER_CUBIC))
+        # pred = classifier.predict_on_batch(np.array(keras_input))
 
         # draw the predicted rectangles
+        k=0
         for drone in Drones:
+            # if np.argmax(pred[k]) == 1:
+            #     if pred[k][1] >= 0.80:
             drone = [int(drone[0] * x_ratio), int(drone[1] * x_ratio), int(drone[2] * y_ratio), int(drone[3] * y_ratio)]
             cv2.rectangle(sample_image1, (drone[0], drone[2]), (drone[1], drone[3]), (255, 0, 0), 2)
             labeled_anchor_box = get_label_anchor_box(image)
             cv2.rectangle(sample_image1, (labeled_anchor_box[0], labeled_anchor_box[2]), (labeled_anchor_box[1], labeled_anchor_box[3]), (0, 255, 0), 2)
-
+            # k=k+1
         cv2.imwrite(PREDICTED_PATH + '/' + image, sample_image1)
         print("Length of Drones: " + str(len(Drones)))
         print("Next image...")

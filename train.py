@@ -47,7 +47,7 @@ def build_models():
     classifier = Model(keras_input, classifier_output)
 
     # Regressor
-    regressor_output = Dense(4, activation='relu')(x)
+    regressor_output = Dense(4, activation='sigmoid')(x)
     regressor = Model(keras_input, regressor_output)
 
     return base_model, classifier, regressor

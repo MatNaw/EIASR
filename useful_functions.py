@@ -77,10 +77,10 @@ def mark_boxes(x_resized, y_resized, real_boxes_resized, positive_box_threshold,
 
                     if max(IoU_values) >= positive_box_threshold:
                         [real_x_min, real_x_max, real_y_min, real_y_max] = real_boxes_resized[np.argmax(IoU_values)]
-                        real_x_min = int((real_x_min - x_min) / 5)
-                        real_x_max = int((real_x_max - x_min) / 5)
-                        real_y_min = int((real_y_min - y_min) / 5)
-                        real_y_max = int((real_y_max - y_min) / 5)
+                        real_x_min = (real_x_min - x_min) / 5 / KERAS_IMG_SIZE[0]
+                        real_x_max = (real_x_max - x_min) / 5 / KERAS_IMG_SIZE[0]
+                        real_y_min = (real_y_min - y_min) / 5 / KERAS_IMG_SIZE[0]
+                        real_y_max = (real_y_max - y_min) / 5 / KERAS_IMG_SIZE[0]
 
                         positive_boxes.append(([x_min, x_max, y_min, y_max], [real_x_min, real_x_max, real_y_min, real_y_max]))
                         # positive_boxes.append(([x_min, x_max, y_min, y_max], real_boxes_resized[np.argmax(IoU_values)]))
