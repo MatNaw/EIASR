@@ -70,6 +70,8 @@ def mark_boxes(x_resized, y_resized, real_boxes_resized, positive_box_threshold,
                     anchor_x = FIRST_ANCHOR_X + i * ANCHOR_STEP_X
                     anchor_y = FIRST_ANCHOR_Y + j * ANCHOR_STEP_Y
                     (x_min, x_max, y_min, y_max) = get_box(anchor_x, anchor_y, width, height, (y_resized, x_resized, 3))
+                    box_w = x_max - x_min
+                    box_h = y_max - y_min
 
                     for realBoxR in real_boxes_resized:
                         current_IoU = calculate_IoU([x_min, x_max, y_min, y_max], realBoxR)
@@ -77,10 +79,10 @@ def mark_boxes(x_resized, y_resized, real_boxes_resized, positive_box_threshold,
 
                     if max(IoU_values) >= positive_box_threshold:
                         [real_x_min, real_x_max, real_y_min, real_y_max] = real_boxes_resized[np.argmax(IoU_values)]
-                        real_x_min = (real_x_min - x_min) / 5 / KERAS_IMG_SIZE[0]
-                        real_x_max = (real_x_max - x_min) / 5 / KERAS_IMG_SIZE[0]
-                        real_y_min = (real_y_min - y_min) / 5 / KERAS_IMG_SIZE[0]
-                        real_y_max = (real_y_max - y_min) / 5 / KERAS_IMG_SIZE[0]
+                        real_x_min = (real_x_min - x_min) / box_w #/ UNIFORM_IMG_SIZE[0] #/ 5 / KERAS_IMG_SIZE[0]
+                        real_x_max = (real_x_max - x_min) / box_w #/ UNIFORM_IMG_SIZE[0] #/ 5 / KERAS_IMG_SIZE[0]
+                        real_y_min = (real_y_min - y_min) / box_h #/ UNIFORM_IMG_SIZE[0] #/ 5 / KERAS_IMG_SIZE[0]
+                        real_y_max = (real_y_max - y_min) / box_h #/ UNIFORM_IMG_SIZE[0] #/ 5 / KERAS_IMG_SIZE[0]
 
                         positive_boxes.append(([x_min, x_max, y_min, y_max], [real_x_min, real_x_max, real_y_min, real_y_max]))
                         # positive_boxes.append(([x_min, x_max, y_min, y_max], real_boxes_resized[np.argmax(IoU_values)]))

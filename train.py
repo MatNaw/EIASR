@@ -55,10 +55,10 @@ def build_models():
 
 def compile_model_and_train(classifier, regressor, lr, labels, val_classifier_imgs, val_regressor_imgs, val_labels, val_boxes):
     classifier.compile(loss='binary_crossentropy', optimizer=optimizers.RMSprop(lr=lr), metrics=['acc'])
-    regressor.compile(loss='mean_squared_error', optimizer=optimizers.RMSprop(lr=lr), metrics=['acc'])
+    regressor.compile(loss='mean_squared_error', optimizer=optimizers.Adam(lr=lr), metrics=['acc'])
     for epoch in range(NUM_EPOCHS):
         print("\n\nEPOCH: ", epoch)
-        dataset = create_batch_list(labels, positive_box_threshold=0.7, negative_box_threshold=0.3)
+        dataset = create_batch_list(labels, positive_box_threshold=0.8, negative_box_threshold=0.3)
 
         error_train_classifier = []
         error_train_regressor = []
