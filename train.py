@@ -13,6 +13,7 @@ from useful_functions import create_batch_list, create_test_data
 
 
 def get_labels():
+    # Retrieve real labels of drones from CSV file
     with open(LABEL_PATH, 'r') as read_obj:
         csv_reader = reader(read_obj)
 
@@ -53,25 +54,30 @@ def build_models():
     regressor_output = Dense(4, activation='sigmoid')(x)
     regressor = Model(keras_input, regressor_output)
 
-    return base_model, classifier, regressor
+    return classifier, regressor
 
 
 def compile_model_and_train(classifier, regressor, lr, labels, val_classifier_imgs, val_regressor_imgs, val_labels, val_boxes):
     classifier.compile(loss='binary_crossentropy', optimizer=optimizers.RMSprop(lr=lr), metrics=['acc'])
     regressor.compile(loss='mean_squared_error', optimizer=optimizers.Adam(lr=lr), metrics=['acc'])
     with open(OUTPUT_STATISTICS_PATH, 'w', newline='') as statistics_file:
+        # Train models
         for epoch in range(NUM_EPOCHS):
             print("\n\nEPOCH: ", epoch)
+            # Create a list of batches
             dataset = create_batch_list(labels, positive_box_threshold=0.8, negative_box_threshold=0.3)
 
             error_train_classifier = []
             error_train_regressor = []
+
+            # Train models on every batch
             for (classifier_images, regressor_images, classes, boxes) in dataset:
                 error_train_classifier.append(classifier.train_on_batch(np.array(classifier_images), np.array(classes)))
                 error_train_regressor.append(regressor.train_on_batch(np.array(regressor_images), np.array(boxes)))
             error_val_classifier = classifier.test_on_batch(np.array(val_classifier_imgs), np.array(val_labels))
             error_val_regressor = regressor.test_on_batch(np.array(val_regressor_imgs), np.array(val_boxes))
 
+            # Calculate statistics
             mean_error_train_classifier = mean(error_train_classifier[:][0])
             mean_accuracy_train_classifier = mean(error_train_classifier[:][1])
             mean_error_train_regressor = mean(error_train_regressor[:][0])
@@ -88,16 +94,22 @@ def compile_model_and_train(classifier, regressor, lr, labels, val_classifier_im
 
 
 def train_network():
+    # Retrieve real labels of drones
     labels = get_labels()
-    base_model, classifier, regressor = build_models()
 
+    # Build models for classifier and regressor
+    classifier, regressor = build_models()
+
+    # Create test/validation data
     print("Loading validation data")
     val_classifier_imgs, val_regressor_imgs, val_labels, val_boxes = create_test_data(labels, positive_box_threshold=0.7, negative_box_threshold=0.3)
     print("Validation data loaded!")
     print("Number of validation samples: ", (len(val_labels)))
 
+    # Train models
     compile_model_and_train(classifier, regressor, 1e-4, labels, val_classifier_imgs, val_regressor_imgs, val_labels, val_boxes)
 
+    # Save classifier and regressor models
     classifier.save(CLASS_MODEL_PATH)
     regressor.save(REGRESSOR_MODEL_PATH)
     print('Training done!')

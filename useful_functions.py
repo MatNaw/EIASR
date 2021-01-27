@@ -35,7 +35,12 @@ def calculate_IoU(box1, box2):
 
 def get_box(anchor_x, anchor_y, box_width, box_height, img_shape):
     """
-    Cuts the given box on edges, according to the given anchor point and image shape.
+    Cuts the given box on edges, according to the given image shape and anchor point.
+    :param anchor_x: X coordinate of anchor point
+    :param anchor_y: Y coordinate of anchor point
+    :param box_width: Width of the box
+    :param box_height: Height of the box
+    :param img_shape: Image shape
     :return: Rectangle box (box = [xmin, xmax, ymin, ymax])
     """
     (img_y, img_x, _) = img_shape
@@ -51,8 +56,16 @@ def get_box(anchor_x, anchor_y, box_width, box_height, img_shape):
     return x_min, x_max, y_min, y_max
 
 
-# return positive and negative boxes, marking them respectively to positive_box_threshold
 def mark_boxes(x_resized, y_resized, real_boxes_resized, positive_box_threshold, negative_box_threshold):
+    """
+    Returns positive and negative boxes, marking them respectively to positive and negative box threshold.
+    :param x_resized: Resized shape of original image in X axis
+    :param y_resized: Resized shape of original image in Y axis
+    :param real_boxes_resized: List of real boxes (retrieved from labels.csv)
+    :param positive_box_threshold: Positive threshold to assign the box to the list of positive samples
+    :param negative_box_threshold: Negative threshold to assign the box to the list of negative samples
+    :return: Two lists of rectangle boxes (box = [xmin, xmax, ymin, ymax])
+    """
     anchors_along_x = round((x_resized - FIRST_ANCHOR_X) / ANCHOR_STEP_X) + 1  # On scaled image
     anchors_along_y = round((y_resized - FIRST_ANCHOR_Y) / ANCHOR_STEP_Y) + 1  # On scaled image
 
@@ -90,6 +103,13 @@ def mark_boxes(x_resized, y_resized, real_boxes_resized, positive_box_threshold,
 
 
 def create_batch(labels, positive_box_threshold=0.7, negative_box_threshold=0.3):
+    """
+    Creates a single batch vector of images for batch training of the models.
+    :param labels: Labels retrieved from labels.csv
+    :param positive_box_threshold: Positive threshold to assign the box to the list of positive samples
+    :param negative_box_threshold: Negative threshold to assign the box to the list of negative samples
+    :return: Batch vector of images for classifier and regressor, list of labels and list of generated boxes
+    """
     train_list = os.listdir(TRAIN_PATH)
 
     batch_classifier_images = []
@@ -167,6 +187,13 @@ def create_batch(labels, positive_box_threshold=0.7, negative_box_threshold=0.3)
 
 
 def create_batch_list(labels, positive_box_threshold=0.7, negative_box_threshold=0.3):
+    """
+    Creates a list of batches for batch training of the models.
+    :param labels: Labels retrieved from labels.csv
+    :param positive_box_threshold: Positive threshold to assign the box to the list of positive samples
+    :param negative_box_threshold: Negative threshold to assign the box to the list of negative samples
+    :return: Dataset presenting the list of batches for training
+    """
     dataset = []
 
     for step in range(EPOCH_LENGTH):
@@ -178,6 +205,14 @@ def create_batch_list(labels, positive_box_threshold=0.7, negative_box_threshold
 
 
 def create_test_data(labels, positive_box_threshold=0.7, negative_box_threshold=0.3, batch_size=100):
+    """
+    Creates a list of test data.
+    :param labels: Labels retrieved from labels.csv
+    :param positive_box_threshold: Positive threshold to assign the box to the list of positive samples
+    :param negative_box_threshold: Negative threshold to assign the box to the list of negative samples
+    :param batch_size: Size of test data batch
+    :return: Test data vectors for classifier and regressor, vector of labels and vector of boxes
+    """
     test_classifier_images = []
     test_regressor_images = []
     test_labels = []
@@ -235,6 +270,12 @@ def create_test_data(labels, positive_box_threshold=0.7, negative_box_threshold=
 # Box's shape:
 # box = [xmin, xmax, ymin, ymax]
 def cut_on_edges(img_shape, box):
+    """
+    Cuts the given box on edges, according to the given image shape.
+    :param img_shape: Image shape
+    :param box: Given box to be cut
+    :return: Given box after cutting on edges
+    """
     xmin = int(max(0, box[0]))
     ymin = int(max(0, box[2]))
     xmax = int(min(img_shape[1], box[1]))
@@ -244,6 +285,13 @@ def cut_on_edges(img_shape, box):
 
 
 def NMS(box_list, labels, IoU_threshold=0.3):
+    """
+    Applies NMS filter on a list of boxes.
+    :param box_list: List of boxes predicted for the processed image
+    :param labels: Labels retrieved from labels.csv
+    :param IoU_threshold: IoU threshold for NMS filter
+    :return: Filtered list of boxes after applying NMS filter
+    """
     filtered_list = []
     while len(box_list) > 0:
         k = np.argmax(labels)

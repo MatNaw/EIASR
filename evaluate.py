@@ -9,6 +9,11 @@ import cv2
 
 
 def get_label_anchor_box(image_name):
+    """
+    Retrieves anchors boxes of real labels.
+    :param image_name: Name of the image
+    :return: List of labels for the given image
+    """
     labels = []
     list_labels = get_labels()
     for label in list_labels:
@@ -18,9 +23,12 @@ def get_label_anchor_box(image_name):
 
 
 def predict_images():
+    """
+    Detects the drones in the image set given in project's path TO_PREDICT_PATH.
+    """
     pred_list = os.listdir(TO_PREDICT_PATH)
 
-    _, classifier, regressor = build_models()
+    classifier, regressor = build_models()
     classifier.load_weights(CLASS_MODEL_PATH)
     regressor.load_weights(REGRESSOR_MODEL_PATH)
     (y_resized, x_resized) = UNIFORM_IMG_SIZE
