@@ -111,8 +111,8 @@ def predict_images():
         Drones = NMS(Drones, Drones_marks, IoU_threshold=0.1)
 
         # Draw the predicted rectangles
-        for index, drone in enumerate(Drones):
-            Drones[index] = [int(drone[0] * x_ratio), int(drone[1] * x_ratio), int(drone[2] * y_ratio), int(drone[3] * y_ratio)]
+        for drone in Drones:
+            drone = [int(drone[0] * x_ratio), int(drone[1] * x_ratio), int(drone[2] * y_ratio), int(drone[3] * y_ratio)]
             cv2.rectangle(sample_image1, (drone[0], drone[2]), (drone[1], drone[3]), (255, 0, 0), 2)
 
         labeled_anchor_boxes = get_label_anchor_box(image)
@@ -122,6 +122,7 @@ def predict_images():
 
         # Calculate IoU values
         for drone in Drones:
+            drone = [int(drone[0] * x_ratio), int(drone[1] * x_ratio), int(drone[2] * y_ratio), int(drone[3] * y_ratio)]
             current_IoU = []
             for labeled_anchor_box in labeled_anchor_boxes:
                 current_IoU.append(calculate_IoU(drone, labeled_anchor_box))
@@ -130,6 +131,5 @@ def predict_images():
         print("Length of Drones: " + str(len(Drones)))
         print("Next image...")
 
-    print(IoU_values)
     print("Mean IoU value: " + str(mean(np.array(IoU_values))))
     print("All images predicted!")
