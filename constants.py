@@ -16,9 +16,9 @@ REGRESSOR_MODEL_PATH = './regressor_model.h5'
 UNIFORM_IMG_SIZE = (400, 400)
 
 # boxes
-BOX_SIZES = [int(UNIFORM_IMG_SIZE[0] / 5 * 3), int(UNIFORM_IMG_SIZE[0] / 5 * 2), int(UNIFORM_IMG_SIZE[0] / 5)]
+BOX_SIZES = [int(UNIFORM_IMG_SIZE[0] / 5 * 3), int(UNIFORM_IMG_SIZE[0] / 5 * 2)]
 BOX_SCALES = [1, 1 / (sqrt(2)), sqrt(2)]  # Scales of boxes: 1:1, 1:2, 2:1
-KERAS_IMG_SIZE = (BOX_SIZES[2], BOX_SIZES[2])
+KERAS_IMG_SIZE = (80, 80)
 
 # anchors
 FIRST_ANCHOR_X = 5  # pixels

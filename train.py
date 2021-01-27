@@ -6,7 +6,7 @@ from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Input
 from tensorflow.keras.models import Model
 from tensorflow.keras import optimizers
 
-from constants import BOX_SIZES, FEATURE_WEIGHTS_PATH, LABEL_PATH, NUM_EPOCHS, CLASS_MODEL_PATH, REGRESSOR_MODEL_PATH
+from constants import BOX_SIZES, FEATURE_WEIGHTS_PATH, LABEL_PATH, NUM_EPOCHS, CLASS_MODEL_PATH, REGRESSOR_MODEL_PATH, KERAS_IMG_SIZE
 from useful_functions import create_batch_list, create_test_data
 
 
@@ -30,7 +30,7 @@ def build_models():
     # FEATURE EXTRACTION LAYERS - TRANSFER LEARNING
 
     # input shape
-    keras_input_shape = (BOX_SIZES[2], BOX_SIZES[2], 3)
+    keras_input_shape = (KERAS_IMG_SIZE[0], KERAS_IMG_SIZE[1], 3)
     keras_input = Input(shape=keras_input_shape)
 
     base_model = Xception(
