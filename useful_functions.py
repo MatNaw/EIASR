@@ -1,5 +1,4 @@
 import os
-
 import cv2
 import random
 import numpy as np
@@ -64,7 +63,7 @@ def mark_boxes(x_resized, y_resized, real_boxes_resized, positive_box_threshold,
         for j in range(anchors_along_y):
             for boxSize in BOX_SIZES:
                 for boxScale in BOX_SCALES:
-                    IoU_values = []  # important for multiple drones in one image
+                    IoU_values = []  # important for detecting multiple drones in one image
                     width = round(boxSize * boxScale)
                     height = round(boxSize / boxScale)
                     anchor_x = FIRST_ANCHOR_X + i * ANCHOR_STEP_X
@@ -79,13 +78,12 @@ def mark_boxes(x_resized, y_resized, real_boxes_resized, positive_box_threshold,
 
                     if max(IoU_values) >= positive_box_threshold:
                         [real_x_min, real_x_max, real_y_min, real_y_max] = real_boxes_resized[np.argmax(IoU_values)]
-                        real_x_min = (real_x_min - x_min) / box_w #/ UNIFORM_IMG_SIZE[0] #/ 5 / KERAS_IMG_SIZE[0]
-                        real_x_max = (real_x_max - x_min) / box_w #/ UNIFORM_IMG_SIZE[0] #/ 5 / KERAS_IMG_SIZE[0]
-                        real_y_min = (real_y_min - y_min) / box_h #/ UNIFORM_IMG_SIZE[0] #/ 5 / KERAS_IMG_SIZE[0]
-                        real_y_max = (real_y_max - y_min) / box_h #/ UNIFORM_IMG_SIZE[0] #/ 5 / KERAS_IMG_SIZE[0]
+                        real_x_min = (real_x_min - x_min) / box_w
+                        real_x_max = (real_x_max - x_min) / box_w
+                        real_y_min = (real_y_min - y_min) / box_h
+                        real_y_max = (real_y_max - y_min) / box_h
 
                         positive_boxes.append(([x_min, x_max, y_min, y_max], [real_x_min, real_x_max, real_y_min, real_y_max]))
-                        # positive_boxes.append(([x_min, x_max, y_min, y_max], real_boxes_resized[np.argmax(IoU_values)]))
                     elif max(IoU_values) <= negative_box_threshold:
                         negative_boxes.append([x_min, x_max, y_min, y_max])
     return positive_boxes, negative_boxes
@@ -234,6 +232,7 @@ def create_test_data(labels, positive_box_threshold=0.7, negative_box_threshold=
     return test_classifier_images, test_regressor_images, test_labels, test_boxes
 
 
+# Box's shape:
 # box = [xmin, xmax, ymin, ymax]
 def cut_on_edges(img_shape, box):
     xmin = int(max(0, box[0]))

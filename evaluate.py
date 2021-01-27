@@ -1,11 +1,9 @@
 import os
 import numpy as np
-import pandas as pd
 
 from useful_functions import cut_on_edges, NMS
 from constants import TO_PREDICT_PATH, PREDICTED_PATH, UNIFORM_IMG_SIZE, FIRST_ANCHOR_X, FIRST_ANCHOR_Y, \
-    ANCHOR_STEP_X, ANCHOR_STEP_Y, BOX_SIZES, BOX_SCALES, KERAS_IMG_SIZE, CLASS_MODEL_PATH, REGRESSOR_MODEL_PATH, \
-    LABEL_PATH
+    ANCHOR_STEP_X, ANCHOR_STEP_Y, BOX_SIZES, BOX_SCALES, KERAS_IMG_SIZE, CLASS_MODEL_PATH, REGRESSOR_MODEL_PATH
 from train import build_models, get_labels
 import cv2
 
@@ -93,7 +91,7 @@ def predict_images():
 
                                     Drones.append([reg_box_x_min, reg_box_x_max, reg_box_y_min, reg_box_y_max])
                                     Drones_marks.append(pred[1])
-                                k = k + 1
+                                k += 1
                             keras_input = []
                             boxes = []
                             remaining_anchors -= iterator
