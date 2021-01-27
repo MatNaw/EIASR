@@ -1,11 +1,12 @@
 import os
+import cv2
 import numpy as np
 
-from useful_functions import cut_on_edges, NMS
+from statistics import mean
+from useful_functions import cut_on_edges, NMS, calculate_IoU
 from constants import TO_PREDICT_PATH, PREDICTED_PATH, UNIFORM_IMG_SIZE, FIRST_ANCHOR_X, FIRST_ANCHOR_Y, \
     ANCHOR_STEP_X, ANCHOR_STEP_Y, BOX_SIZES, BOX_SCALES, KERAS_IMG_SIZE, CLASS_MODEL_PATH, REGRESSOR_MODEL_PATH
 from train import build_models, get_labels
-import cv2
 
 
 def get_label_anchor_box(image_name):
@@ -33,6 +34,7 @@ def predict_images():
     regressor.load_weights(REGRESSOR_MODEL_PATH)
     (y_resized, x_resized) = UNIFORM_IMG_SIZE
 
+    IoU_values = []
     for image in pred_list:
         sample_image1 = cv2.imread(TO_PREDICT_PATH + '/' + image)
         sample_image = sample_image1.astype(np.float32) / 255.0
@@ -106,18 +108,28 @@ def predict_images():
                             iterator = 0
                             print("Remaining anchors to iterate: ", remaining_anchors)
 
-
         Drones = NMS(Drones, Drones_marks, IoU_threshold=0.1)
 
-        # draw the predicted rectangles
-        for drone in Drones:
-            drone = [int(drone[0] * x_ratio), int(drone[1] * x_ratio), int(drone[2] * y_ratio), int(drone[3] * y_ratio)]
+        # Draw the predicted rectangles
+        for index, drone in enumerate(Drones):
+            Drones[index] = [int(drone[0] * x_ratio), int(drone[1] * x_ratio), int(drone[2] * y_ratio), int(drone[3] * y_ratio)]
             cv2.rectangle(sample_image1, (drone[0], drone[2]), (drone[1], drone[3]), (255, 0, 0), 2)
+
         labeled_anchor_boxes = get_label_anchor_box(image)
         for labeled_anchor_box in labeled_anchor_boxes:
             cv2.rectangle(sample_image1, (labeled_anchor_box[0], labeled_anchor_box[2]), (labeled_anchor_box[1], labeled_anchor_box[3]), (0, 255, 0), 2)
         cv2.imwrite(PREDICTED_PATH + '/' + image, sample_image1)
+
+        # Calculate IoU values
+        for drone in Drones:
+            current_IoU = []
+            for labeled_anchor_box in labeled_anchor_boxes:
+                current_IoU.append(calculate_IoU(drone, labeled_anchor_box))
+            IoU_values.append(max(np.array(current_IoU)))
+
         print("Length of Drones: " + str(len(Drones)))
         print("Next image...")
 
+    print(IoU_values)
+    print("Mean IoU value: " + str(mean(np.array(IoU_values))))
     print("All images predicted!")
